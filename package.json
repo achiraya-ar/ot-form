@@ -1,0 +1,16 @@
+{
+  "name": "ot-form",
+  "private": true,
+  "version": "0.1.0",
+  "description": "OT-Form — บันทึกค่าตอบแทนนอกเวลาราชการ",
+  "scripts": {
+    "dev": "npm --prefix app run dev",
+    "build": "npm --prefix app run build",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4"
+  }
+}

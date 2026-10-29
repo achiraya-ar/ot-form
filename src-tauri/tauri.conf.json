@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "OT-Form",
+  "mainBinaryName": "OT-Form",
+  "version": "0.1.0",
+  "identifier": "com.otform.desktop",
+  "build": {
+    "beforeDevCommand": {
+      "script": "npm run dev",
+      "cwd": "../app"
+    },
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": {
+      "script": "npm run build",
+      "cwd": "../app"
+    },
+    "frontendDist": "../app/dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "OT-Form — บันทึกค่าตอบแทนนอกเวลาราชการ",
+        "width": 1440,
+        "height": 960,
+        "minWidth": 1100,
+        "minHeight": 720,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "บันทึกค่าตอบแทนนอกเวลาราชการ",
+    "longDescription": "สร้างคำสั่ง บันทึกขออนุมัติ ตารางเวร ใบลงเวลา และหลักฐานการจ่ายเงินค่าตอบแทนนอกเวลาราชการ",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

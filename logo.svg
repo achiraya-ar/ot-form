@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Background Bright Soft Sky Blue Gradient -->
+    <radialGradient id="bgLightSky" cx="50%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#E0F2FE" />
+      <stop offset="50%" stop-color="#BAE6FD" />
+      <stop offset="100%" stop-color="#7DD3FC" />
+    </radialGradient>
+
+    <!-- Golden & White Starlight Aura Backdrop -->
+    <radialGradient id="auraLightSky" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#FFFBEB" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#FEF08A" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#7DD3FC" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- 3D Diamond Shimmer Gradient -->
+    <linearGradient id="diamondGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="30%" stop-color="#E0F7FA" />
+      <stop offset="70%" stop-color="#80DEEA" />
+      <stop offset="100%" stop-color="#00ACC1" />
+    </linearGradient>
+
+    <!-- 3D Gold Gradients -->
+    <linearGradient id="gold3DGirl" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDE7" />
+      <stop offset="25%" stop-color="#FFD54F" />
+      <stop offset="65%" stop-color="#FFA000" />
+      <stop offset="100%" stop-color="#E65100" />
+    </linearGradient>
+
+    <!-- 3D Skin Gradient -->
+    <radialGradient id="skin3DGirl" cx="35%" cy="25%" r="70%">
+      <stop offset="0%" stop-color="#FFF3E0" />
+      <stop offset="50%" stop-color="#FFE0B2" />
+      <stop offset="80%" stop-color="#FFCC80" />
+      <stop offset="100%" stop-color="#FB8C00" />
+    </radialGradient>
+
+    <!-- 3D Blonde/Light Brown Hair Gradient -->
+    <linearGradient id="hair3DGirl" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFEE58" />
+      <stop offset="40%" stop-color="#FFCA28" />
+      <stop offset="75%" stop-color="#FFA000" />
+      <stop offset="100%" stop-color="#FF6F00" />
+    </linearGradient>
+
+    <!-- 3D Dress Pink Gradient -->
+    <linearGradient id="dress3DGirl" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FF80AB" />
+      <stop offset="40%" stop-color="#FF4081" />
+      <stop offset="80%" stop-color="#C51162" />
+      <stop offset="100%" stop-color="#880E4F" />
+    </linearGradient>
+
+    <!-- 3D Cash Green Gradient -->
+    <linearGradient id="cash3D" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C8E6C9" />
+      <stop offset="50%" stop-color="#4CAF50" />
+      <stop offset="100%" stop-color="#1B5E20" />
+    </linearGradient>
+
+    <!-- Soft 3D Drop Shadows & Inner Glow -->
+    <filter id="shadowGirl" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#0369A1" flood-opacity="0.25" />
+    </filter>
+
+    <filter id="innerGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+
+    <filter id="starGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#FFFFFF" flood-opacity="0.9" />
+    </filter>
+  </defs>
+
+  <!-- Full Canvas Background -->
+  <rect width="500" height="500" fill="url(#bgLightSky)" />
+
+  <!-- Background Glowing Aura -->
+  <circle cx="250" cy="220" r="230" fill="url(#auraLightSky)" />
+
+  <!-- LITTLE PRINCE THEME STARS & PLANETS (Soft Sky Theme) -->
+  <g filter="url(#starGlow)">
+    <!-- Little Golden Asteroid (Top Right) -->
+    <circle cx="410" cy="90" r="18" fill="url(#gold3DGirl)" opacity="0.9" filter="url(#innerGlow)" />
+    <circle cx="404" cy="84" r="3" fill="#FFFDE7" opacity="0.8" />
+
+    <!-- Tiny Asteroid (Bottom Left) -->
+    <circle cx="70" cy="410" r="12" fill="url(#gold3DGirl)" opacity="0.8" filter="url(#innerGlow)" />
+
+    <!-- 3D Cut Diamond -->
+    <g transform="translate(60, 80) scale(0.65) rotate(-15)">
+      <polygon points="20,0 40,0 50,15 25,40 0,15" fill="url(#diamondGrad)" filter="url(#innerGlow)" />
+      <polygon points="20,0 30,15 0,15" fill="#FFFFFF" opacity="0.8" />
+    </g>
+
+    <!-- Golden Little Prince Stars -->
+    <path d="M 130,70 Q 148,70 148,52 Q 148,70 166,70 Q 148,70 148,88 Q 148,70 130,70 Z" fill="#FBBF24" />
+    <path d="M 340,60 Q 355,60 355,45 Q 355,60 370,60 Q 355,60 355,75 Q 355,60 340,60 Z" fill="#FBBF24" />
+    <path d="M 430,180 Q 442,180 442,168 Q 442,180 454,180 Q 442,180 442,192 Q 442,180 430,180 Z" fill="#FFFFFF" />
+    <path d="M 50,180 Q 62,180 62,168 Q 62,180 74,180 Q 62,180 62,192 Q 62,180 50,180 Z" fill="#FFFFFF" />
+    <path d="M 90,320 Q 105,320 105,305 Q 105,320 120,320 Q 105,320 105,335 Q 105,320 90,320 Z" fill="#FBBF24" />
+    <path d="M 380,320 Q 392,320 392,308 Q 392,320 404,320 Q 392,320 392,332 Q 392,320 380,320 Z" fill="#FBBF24" />
+
+    <!-- Glowing Starlight Dots -->
+    <circle cx="110" cy="120" r="3.5" fill="#FFFFFF" />
+    <circle cx="360" cy="130" r="4" fill="#FBBF24" />
+    <circle cx="450" cy="250" r="3" fill="#FFFFFF" />
+    <circle cx="55" cy="280" r="3.5" fill="#FBBF24" />
+    <circle cx="430" cy="380" r="4" fill="#FFFFFF" />
+    <circle cx="70" cy="360" r="3" fill="#FBBF24" />
+  </g>
+
+  <!-- Floating Money & Gold Bars -->
+  <g filter="url(#shadowGirl)">
+    <!-- Mid Left: Floating Cash Stack -->
+    <g transform="translate(25, 335) rotate(-15)">
+      <rect x="5" y="10" width="80" height="52" rx="9" fill="url(#cash3D)" filter="url(#innerGlow)" />
+      <circle cx="45" cy="36" r="14" fill="#E8F5E9" />
+      <text x="45" y="43" font-family="Arial Black" font-size="20" fill="#1B5E20" text-anchor="middle">$</text>
+    </g>
+
+    <!-- Mid Right: Floating Gold Bar -->
+    <g transform="translate(385, 325) rotate(22)">
+      <polygon points="18,12 85,12 100,42 6,42" fill="url(#gold3DGirl)" filter="url(#innerGlow)" />
+      <polygon points="6,42 100,42 92,70 0,70" fill="#E65100" opacity="0.6" />
+      <text x="50" y="38" font-family="Arial Black" font-size="14" fill="#5D4037" text-anchor="middle">99.99</text>
+    </g>
+  </g>
+
+  <!-- Main 3D Mascot Character -->
+  <g id="fullMascotGirl" filter="url(#shadowGirl)">
+    <!-- 3D Dress Body -->
+    <path d="M 80,500 C 80,360 420,360 420,500 Z" fill="url(#dress3DGirl)" filter="url(#innerGlow)" />
+    <path d="M 140,500 C 140,410 360,410 360,500 Z" fill="#FF80AB" opacity="0.3" />
+
+    <!-- Big Cute Ribbon Bow on Dress -->
+    <path d="M 205,370 Q 250,345 295,370 Q 320,400 295,430 Q 250,405 205,430 Q 180,400 205,370 Z" fill="url(#gold3DGirl)" filter="url(#innerGlow)" />
+    <circle cx="250" cy="400" r="14" fill="#FFFFFF" filter="url(#innerGlow)" />
+
+    <!-- Giant 3D Gold Chain & Medal -->
+    <path d="M 150,310 C 165,435 335,435 350,310 C 370,455 130,455 150,310 Z" fill="url(#gold3DGirl)" />
+    <circle cx="250" cy="445" r="38" fill="url(#gold3DGirl)" filter="url(#innerGlow)" />
+    <circle cx="250" cy="445" r="28" fill="#FFFDE7" />
+    <text x="250" y="458" font-family="Arial Black, sans-serif" font-size="38" font-weight="900" fill="url(#gold3DGirl)" text-anchor="middle" filter="url(#innerGlow)">$</text>
+
+    <!-- 3D Head Sphere -->
+    <circle cx="250" cy="225" r="130" fill="url(#skin3DGirl)" filter="url(#innerGlow)" />
+
+    <!-- 3D Volumetric Long Hair -->
+    <path d="M 120,205 C 115,100 190,75 250,75 C 310,75 385,100 380,205 C 395,320 360,370 360,370 L 320,330 C 320,330 350,250 340,170 C 310,140 190,140 160,170 C 150,250 180,330 180,330 L 140,370 C 140,370 105,320 120,205 Z" fill="url(#hair3DGirl)" filter="url(#innerGlow)" />
+
+    <!-- Shiny 3D Princess Crown -->
+    <g transform="translate(290, 48) rotate(16)">
+      <path d="M 0,42 L 15,6 L 35,28 L 52,0 L 70,28 L 90,6 L 105,42 Z" fill="url(#gold3DGirl)" />
+      <rect x="0" y="42" width="105" height="15" rx="7" fill="url(#gold3DGirl)" />
+      <circle cx="52" cy="16" r="8" fill="#FF1744" filter="url(#innerGlow)" />
+      <circle cx="20" cy="24" r="6" fill="#00E5FF" filter="url(#innerGlow)" />
+      <circle cx="85" cy="24" r="6" fill="#00E5FF" filter="url(#innerGlow)" />
+    </g>
+
+    <!-- Rosy Cheeks -->
+    <ellipse cx="170" cy="265" rx="22" ry="14" fill="#FF5252" opacity="0.65" />
+    <ellipse cx="330" cy="265" rx="22" ry="14" fill="#FF5252" opacity="0.65" />
+
+    <!-- Cute Glossy Eyes -->
+    <circle cx="195" cy="215" r="16" fill="#3E2723" />
+    <circle cx="305" cy="215" r="16" fill="#3E2723" />
+    <circle cx="200" cy="209" r="6" fill="#FFFFFF" />
+    <circle cx="310" cy="209" r="6" fill="#FFFFFF" />
+    <circle cx="192" cy="221" r="2.5" fill="#FFFFFF" />
+    <circle cx="302" cy="221" r="2.5" fill="#FFFFFF" />
+
+    <!-- Smile -->
+    <path d="M 225,275 Q 250,302 275,275" fill="none" stroke="#3E2723" stroke-width="6.5" stroke-linecap="round" />
+  </g>
+</svg>
