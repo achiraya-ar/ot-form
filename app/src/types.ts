@@ -7,6 +7,8 @@ export interface OrgInfo {
   hospitalName: string;
   province: string;
   department: string;
+  /** ชื่อหน่วยงานแบบสั้นที่ใช้ในใบลงเวลา เช่น "งานแพทย์แผนไทย" */
+  departmentShort: string;
   groupName: string;
   ministryRef: string;
   lawRef: string;

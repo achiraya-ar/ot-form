@@ -284,11 +284,77 @@ export function formatOrderNumber(orderNumber: string, yearBE: number): string {
   const yearThai = toThaiDigits(yearBE);
   if (!orderNumber.trim()) return `......./${yearThai}`;
   if (orderNumber.includes(yearThai) || orderNumber.includes(String(yearBE))) {
-    return orderNumber;
+    return toThaiDigits(orderNumber);
   }
-  return `${orderNumber}/${yearThai}`;
+  return toThaiDigits(`${orderNumber}/${yearThai}`);
 }
 
 export function thaiYearFromIso(iso: string): number {
   return parseIsoDate(iso).getFullYear() + 543;
+}
+
+/* ── Document-only formatting (lekh arabs, matching the source files) ─ */
+
+export function formatDateDoc(iso: string): string {
+  const date = parseIsoDate(iso);
+  return `${toThaiDigits(date.getDate())} ${THAI_MONTHS[date.getMonth()]} ${toThaiDigits(
+    date.getFullYear() + 543,
+  )}`;
+}
+
+export function formatDateDocFull(iso: string): string {
+  const date = parseIsoDate(iso);
+  return `${toThaiDigits(date.getDate())} ${THAI_MONTHS[date.getMonth()]} พ.ศ. ${toThaiDigits(
+    date.getFullYear() + 543,
+  )}`;
+}
+
+export function formatDateDocOfficial(iso: string): string {
+  const date = parseIsoDate(iso);
+  return `${toThaiDigits(date.getDate())}  เดือน ${THAI_MONTHS[date.getMonth()]}   พ.ศ. ${toThaiDigits(
+    date.getFullYear() + 543,
+  )}`;
+}
+
+export function formatDateDocOrderIssued(iso: string): string {
+  const date = parseIsoDate(iso);
+  return `${toThaiDigits(date.getDate())}    ${THAI_MONTHS[date.getMonth()]}  พ.ศ. ${toThaiDigits(
+    date.getFullYear() + 543,
+  )}`;
+}
+
+export function formatDateShortDoc(iso: string): string {
+  const date = parseIsoDate(iso);
+  const day = String(date.getDate()).padStart(2, "0");
+  const year = String(date.getFullYear() + 543).slice(-2);
+  return `${toThaiDigits(day)}-${THAI_MONTHS_SHORT[date.getMonth()]}-${toThaiDigits(year)}`;
+}
+
+export function formatMonthYearDoc(month: number, yearBE: number): string {
+  return `${THAI_MONTHS[month - 1]} ${toThaiDigits(yearBE)}`;
+}
+
+export function formatTimeDoc(time: string): string {
+  return toThaiDigits(time.replace(":", "."));
+}
+
+export function formatTimeRangeDoc(start: string, end: string): string {
+  return `${formatTimeDoc(start)}-${formatTimeDoc(end)} น.`;
+}
+
+export function formatTimeHeaderDoc(start: string, end: string): string {
+  const short = (time: string) => formatTimeDoc(time.replace(/^0/, ""));
+  return `เวลา${short(start)}น.-${short(end)}น.`;
+}
+
+export function formatNumberDoc(value: number, decimals = 2): string {
+  const fixed = Math.abs(value).toFixed(decimals);
+  const [integer, fraction] = fixed.split(".");
+  const withCommas = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const trimmed = fraction && Number(fraction) !== 0 ? `.${fraction}` : "";
+  return `${value < 0 ? "-" : ""}${toThaiDigits(`${withCommas}${trimmed}`)}`;
+}
+
+export function formatBahtDoc(value: number): string {
+  return formatNumberDoc(value, 2);
 }

@@ -2,10 +2,10 @@ import type { AppSettings, DocumentSet } from "../types";
 import { Paper } from "../components/PaperStage";
 import { getForm5Rows, totalPayment } from "../lib/selectors";
 import {
-  formatBaht,
-  formatThaiDate,
-  formatThaiMonthYear,
-  formatThaiNumber,
+  formatDateDoc,
+  formatDateDocOfficial,
+  formatMonthYearDoc,
+  formatNumberDoc,
   getDaysInMonth,
   thaiBahtText,
   toThaiDigits,
@@ -40,15 +40,18 @@ export function Form5Document({
   settings: AppSettings;
 }) {
   const rows = getForm5Rows(set, settings);
-  const pages = paginateRows(rows, 4);
+  const pages = paginateRows(rows, 6);
+  const spanOf = (items: typeof rows) =>
+    items.reduce((sum, row) => sum + Math.max(1, row.shifts.length), 0);
+  if (rows.length > 0 && spanOf(pages[pages.length - 1]) > 4) {
+    pages.push([rows[rows.length - 1]]);
+  }
   const days = getDaysInMonth(set.year, set.month);
-  const monthLabel = formatThaiMonthYear(set.month, set.year);
+  const monthLabel = formatMonthYearDoc(set.month, set.year);
   const total = totalPayment(set, settings);
   const payer = set.signatories.payer;
   const director = set.signatories.director;
-  const nursingHead = set.signatories.nursingHead;
   const auditor = set.signatories.auditor;
-  const controller = set.signatories.controller;
 
   return (
     <>
@@ -62,10 +65,7 @@ export function Form5Document({
                 ส่วนราชการ {set.org.hospitalName} จังหวัด {set.org.province} ประจำเดือน{" "}
                 {monthLabel}
               </p>
-              <p>ลงวันที่ {formatThaiDate(set.issueDate)}</p>
-              {pageIndex > 0 && (
-                <span className="page-mark">หน้า {toThaiDigits(pageIndex + 1)}</span>
-              )}
+              <p>ลงวันที่ {formatDateDocOfficial(set.issueDate)}</p>
             </div>
 
             <table className="doc-table doc-table--payment">
@@ -75,11 +75,11 @@ export function Form5Document({
                 <col style={{ width: "20mm" }} />
                 <col style={{ width: "11mm" }} />
                 {Array.from({ length: days }, (_, index) => (
-                  <col key={index} style={{ width: "4.75mm" }} />
+                  <col key={index} style={{ width: "4.2mm" }} />
                 ))}
                 <col style={{ width: "10mm" }} />
                 <col style={{ width: "15mm" }} />
-                <col style={{ width: "12mm" }} />
+                <col style={{ width: "13mm" }} />
                 <col style={{ width: "16mm" }} />
                 <col style={{ width: "12mm" }} />
               </colgroup>
@@ -100,7 +100,11 @@ export function Form5Document({
                     <br />
                     เงิน (บาท)
                   </th>
-                  <th rowSpan={2}>วัน/เดือน/ปี</th>
+                  <th rowSpan={2}>
+                    วัน/เดือน/ปี
+                    <br />
+                    ที่รับเงิน
+                  </th>
                   <th rowSpan={2}>ลายมือชื่อผู้รับเงิน</th>
                   <th rowSpan={2}>หมายเหตุ</th>
                 </tr>
@@ -141,7 +145,7 @@ export function Form5Document({
                             </>
                           )}
                           <td className="center rate-cell">
-                            {formatThaiNumber(row.rate, 2)}
+                            {formatNumberDoc(row.rate, 2)}
                           </td>
                           {Array.from({ length: days }, (_, dayIndex) => {
                             const date = `${set.year - 543}-${String(set.month).padStart(
@@ -164,10 +168,10 @@ export function Form5Document({
                                 {toThaiDigits(row.totalDays)} วัน
                               </td>
                               <td rowSpan={rowSpan} className="center amount-cell">
-                                {formatThaiNumber(row.amount, 2)}
+                                {formatNumberDoc(row.amount, 2)}
                               </td>
                               <td rowSpan={rowSpan} className="center date-received-cell">
-                                {set.paymentDate ? formatThaiDate(set.paymentDate) : ""}
+                                {set.paymentDate ? formatDateDoc(set.paymentDate) : ""}
                               </td>
                               <td rowSpan={rowSpan} />
                               <td rowSpan={rowSpan} />
@@ -185,50 +189,43 @@ export function Form5Document({
               <>
                 <div className="payment-total">
                   <span>รวมจ่ายเงินทั้งสิ้น (ตัวอักษร)</span>
+                  <span className="payment-total__dots" />
                   <strong>{thaiBahtText(total)}</strong>
-                  <span className="payment-total__amount">
-                    {formatBaht(total)} บาท
-                  </span>
+                  <span className="payment-total__dots" />
                 </div>
 
                 <p className="payment-certify">
                   ขอรับรองว่าผู้ที่รับเงินค่าตอบแทนปฏิบัติงานนอกเวลาดังกล่าว ได้ปฏิบัติงานนอกเวลาจริง
                 </p>
 
-                <div className="signature-grid">
-                  <div className="signature-grid__cell">
-                    <p>ลงชื่อ…………………………………………....</p>
-                    <p className="signature-grid__label">หัวหน้าผู้ควบคุม</p>
-                    <p className="signature-grid__name">({controller.name})</p>
-                  </div>
-                  <div className="signature-grid__cell">
-                    <p>ลงชื่อ…………………………………………....</p>
-                    <p className="signature-grid__label">ผู้จ่ายเงิน</p>
-                    <p className="signature-grid__name">({payer.name})</p>
-                    <p>{payer.position}</p>
-                  </div>
-                  <div className="signature-grid__cell">
-                    <p>ลงชื่อ…………………………………………....</p>
-                    <p className="signature-grid__label">ผู้อนุมัติ</p>
-                    <p className="signature-grid__name">({director.name})</p>
-                    <p>{director.position.split("\n").join(" ")}</p>
-                  </div>
-                  <div className="signature-grid__cell">
-                    <p>ลงชื่อ…………………………………………....</p>
-                    <p className="signature-grid__label">หัวหน้ากลุ่มการพยาบาล</p>
-                    <p className="signature-grid__name">
-                      ({nursingHead.name || ".............................."})
+                <div className="payment-sign">
+                  <div className="payment-sign__col">
+                    <p className="payment-sign__line">
+                      ลงชื่อ........................................ <span>หัวหน้าผู้ควบคุม</span>
                     </p>
-                  </div>
-                  <div className="signature-grid__cell">
-                    <p>ลงชื่อ…………………………………………....</p>
-                    <p className="signature-grid__label">ผู้ตรวจสอบ</p>
-                    <p className="signature-grid__name">
-                      ({auditor.name || ".............................."})
+                    <p className="payment-sign__gap" />
+                    <p className="payment-sign__line">
+                      ลงชื่อ........................................ <span>ผู้ตรวจสอบ</span>
                     </p>
-                    {auditor.position && auditor.position !== "ผู้ตรวจสอบ" && (
-                      <p>{auditor.position}</p>
-                    )}
+                    {auditor.name && <p className="payment-sign__name">({auditor.name})</p>}
+                  </div>
+                  <div className="payment-sign__col">
+                    <p className="payment-sign__line">
+                      ลงชื่อ........................................ <span>ผู้จ่ายเงิน</span>
+                    </p>
+                    <p className="payment-sign__name">({payer.name})</p>
+                    {payer.position.split("\n").filter(Boolean).map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                  </div>
+                  <div className="payment-sign__col">
+                    <p className="payment-sign__line">
+                      ลงชื่อ........................................ <span>ผู้อนุมัติ</span>
+                    </p>
+                    <p className="payment-sign__name">({director.name})</p>
+                    {director.position.split("\n").filter(Boolean).map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
                   </div>
                 </div>
               </>

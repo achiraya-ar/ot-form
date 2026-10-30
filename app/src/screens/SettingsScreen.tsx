@@ -265,6 +265,18 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
                   }
                 />
               </Field>
+              <Field label="ชื่องานแบบสั้น" hint="ใช้ในหัวใบลงเวลา">
+                <input
+                  className="input"
+                  value={draft.org.departmentShort}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      org: { ...draft.org, departmentShort: event.target.value },
+                    })
+                  }
+                />
+              </Field>
               <Field label="กลุ่มงาน" required>
                 <input
                   className="input"
