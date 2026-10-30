@@ -9,6 +9,8 @@ import type {
 } from "../types";
 import { assignmentKey, personFullName } from "../data/defaults";
 import {
+  formatDateDoc,
+  formatMonthYearDoc,
   formatTimeRangeDoc,
   formatTimeThai,
   getDaysInMonth,
@@ -34,6 +36,32 @@ export function getSetShifts(set: DocumentSet, settings: AppSettings): Shift[] {
   return settings.shifts
     .filter((shift) => shift.active || ids.has(shift.id))
     .sort((a, b) => a.start.localeCompare(b.start));
+}
+
+/**
+ * Shifts that actually appear in this set's schedule. Before the schedule is
+ * filled in, fall back to the active shifts so the documents still show the
+ * configured time columns.
+ */
+export function getDocumentShifts(set: DocumentSet, settings: AppSettings): Shift[] {
+  const used = new Set(set.assignments.map((assignment) => assignment.shiftId));
+  const shifts = settings.shifts.filter((shift) => used.has(shift.id));
+  return (shifts.length > 0 ? shifts : settings.shifts.filter((shift) => shift.active)).sort(
+    (a, b) => a.start.localeCompare(b.start),
+  );
+}
+
+/**
+ * "ในวันที่ ๑ ตุลาคม ๒๕๖๙" when the request covers a single day, otherwise
+ * "ประจำเดือน ตุลาคม ๒๕๖๙", following the dates chosen when creating the set.
+ */
+export function documentPeriodPhrase(set: DocumentSet): string {
+  const dates =
+    set.selectedDates.length > 0
+      ? [...new Set(set.selectedDates)].sort()
+      : [...new Set(set.assignments.map((assignment) => assignment.date))].sort();
+  if (dates.length === 1) return `ในวันที่ ${formatDateDoc(dates[0])}`;
+  return `ประจำเดือน ${formatMonthYearDoc(set.month, set.year)}`;
 }
 
 export function getAttendance(
@@ -138,7 +166,7 @@ export interface Form1Row {
 }
 
 export function getForm1Rows(set: DocumentSet, settings: AppSettings): Form1Row[] {
-  const shifts = getSetShifts(set, settings);
+  const shifts = getDocumentShifts(set, settings);
   const staffOrder = new Map(set.staffIds.map((id, index) => [id, index]));
   return set.selectedDates
     .map((date) => {
@@ -280,8 +308,8 @@ export function getForm4Rows(set: DocumentSet, settings: AppSettings): Form4Row[
           showStaff: index === 0,
           staffSpan,
           shift,
-          timeIn: absent ? "" : record?.timeIn ?? shift.start,
-          timeOut: absent ? "" : record?.timeOut ?? shift.end,
+          timeIn: record?.timeIn || shift.start,
+          timeOut: record?.timeOut || shift.end,
           absent,
           note: record?.note,
         });

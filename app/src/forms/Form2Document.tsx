@@ -1,13 +1,11 @@
 import type { AppSettings, DocumentSet } from "../types";
 import { Garuda } from "../components/Brand";
 import { Paper } from "../components/PaperStage";
-import { getSetShifts } from "../lib/selectors";
 import {
-  formatDateDoc,
-  formatMonthYearDoc,
-  formatTimeDoc,
-  toThaiDigits,
-} from "../lib/thai";
+  documentPeriodPhrase,
+  getDocumentShifts,
+} from "../lib/selectors";
+import { formatDateDoc, formatTimeDoc, toThaiDigits } from "../lib/thai";
 
 function splitPosition(position: string): string[] {
   return position.split("\n").filter(Boolean);
@@ -20,11 +18,12 @@ export function Form2Document({
   set: DocumentSet;
   settings: AppSettings;
 }) {
-  const shifts = getSetShifts(set, settings);
+  const shifts = getDocumentShifts(set, settings);
   const shortTime = (time: string) => formatTimeDoc(time).replace(/^0/, "");
   const timeText = shifts
     .map((shift) => `${shortTime(shift.start)}-${shortTime(shift.end)} น.`)
     .join(" และ");
+  const periodPhrase = documentPeriodPhrase(set);
   const groupHead = set.signatories.groupHead;
   const director = set.signatories.director;
   const controller = set.signatories.controller;
@@ -63,10 +62,7 @@ export function Form2Document({
       </div>
 
       <p className="memo-body memo-body--indent">
-        ด้วย{set.org.department} {set.org.groupName} {set.org.hospitalName}{" "}
-        มีความประสงค์จะจัดเจ้าหน้าที่ขึ้นปฏิบัติงานนอกเวลาราชการ ประจำเดือน{" "}
-        {formatMonthYearDoc(set.month, set.year)} โดยทำการนอกเวลาราชการ ตั้งแต่เวลา{" "}
-        {timeText} โดยมีเจ้าหน้าที่ปฏิบัติงาน ดังรายชื่อพร้อมตารางการปฏิบัติงานที่แนบมาพร้อมนี้
+        {`ด้วย${set.org.department} ${set.org.groupName} ${set.org.hospitalName} มีความประสงค์จะจัดเจ้าหน้าที่ขึ้นปฏิบัติงานนอกเวลาราชการ ${periodPhrase} โดยทำการนอกเวลาราชการ ตั้งแต่เวลา ${timeText} โดยมีเจ้าหน้าที่ปฏิบัติงาน ดังรายชื่อพร้อมตารางการปฏิบัติงานที่แนบมาพร้อมนี้`}
       </p>
 
       <p className="memo-body memo-body--center">

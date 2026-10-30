@@ -117,7 +117,7 @@ export function Form3Document({
                               key={dayIndex}
                               className={`day-cell ${value === "-" ? "is-absent" : ""}`}
                             >
-                              {value}
+                              <span>{value}</span>
                             </td>
                           );
                         })}

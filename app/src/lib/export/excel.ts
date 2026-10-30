@@ -343,12 +343,12 @@ export async function exportAttendanceXlsx(
           { size: 16 },
         );
       }
-      applyCell(ws, rowIndex, 4, row.absent || !row.timeIn || row.timeIn === "-" ? "" : `${formatTimeDoc(row.timeIn)}น.`, {
+      applyCell(ws, rowIndex, 4, !row.timeIn || row.timeIn === "-" ? "" : `${formatTimeDoc(row.timeIn)}น.`, {
         size: 16,
         align: "center",
       });
       applyCell(ws, rowIndex, 5, row.absent ? "-" : "", { size: 16, align: "center" });
-      applyCell(ws, rowIndex, 6, row.absent || !row.timeOut || row.timeOut === "-" ? "" : `${formatTimeDoc(row.timeOut)}น.`, {
+      applyCell(ws, rowIndex, 6, !row.timeOut || row.timeOut === "-" ? "" : `${formatTimeDoc(row.timeOut)}น.`, {
         size: 16,
         align: "center",
       });

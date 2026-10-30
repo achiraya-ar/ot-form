@@ -1,11 +1,14 @@
 import type { AppSettings, DocumentSet } from "../types";
 import { Garuda } from "../components/Brand";
 import { Paper } from "../components/PaperStage";
-import { getForm1Rows, getSetShifts } from "../lib/selectors";
+import {
+  documentPeriodPhrase,
+  getDocumentShifts,
+  getForm1Rows,
+} from "../lib/selectors";
 import {
   formatDateDoc,
   formatDateDocOrderIssued,
-  formatMonthYearDoc,
   formatOrderNumber,
   formatTimeHeaderDoc,
   toThaiDigits,
@@ -56,10 +59,10 @@ export function Form1Document({
 }) {
   const rows = getForm1Rows(set, settings);
   const pages = paginate(rows);
-  const shifts = getSetShifts(set, settings);
+  const shifts = getDocumentShifts(set, settings);
   const director = set.signatories.director;
   const controller = set.signatories.controller;
-  const monthLabel = formatMonthYearDoc(set.month, set.year);
+  const periodPhrase = documentPeriodPhrase(set);
   const shortDepartment = set.org.departmentShort || set.org.department;
   const orderNumber = set.orderNumber.trim()
     ? formatOrderNumber(set.orderNumber, set.year)
@@ -134,10 +137,7 @@ export function Form1Document({
                 <p className="doc-center doc-dots">.....................................</p>
 
                 <p className="doc-justify doc-indent">
-                  เพื่อให้การปฏิบัติหน้าที่เป็นไปด้วยความเรียบร้อยและมีประสิทธิภาพ{" "}
-                  {shortDepartment} {set.org.groupName} มีความประสงค์ขออนุมัติขึ้นปฏิบัติงานนอกเวลา
-                  ราชการประจำเดือน {monthLabel} โดยอาศัยอำนาจตาม{toThaiDigits(set.org.ministryRef)}{" "}
-                  จึงขอแต่งตั้งผู้มีรายนามดังต่อไปนี้ขึ้นปฏิบัติงานนอกเวลาราชการ
+                  {`เพื่อให้การปฏิบัติหน้าที่เป็นไปด้วยความเรียบร้อยและมีประสิทธิภาพ ${shortDepartment} ${set.org.groupName} มีความประสงค์ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ${periodPhrase} โดยอาศัยอำนาจตาม${toThaiDigits(set.org.ministryRef)} จึงขอแต่งตั้งผู้มีรายนามดังต่อไปนี้ขึ้นปฏิบัติงานนอกเวลาราชการ`}
                 </p>
               </>
             ) : null}

@@ -3068,15 +3068,27 @@ img {
 
 .doc-table--schedule .day-cell,
 .doc-table--payment .day-cell {
+  position: relative;
   font-size: 6.2pt;
   text-align: center;
-  padding: 0.3mm 0.1mm;
-  word-break: break-all;
+  padding: 0;
   line-height: 1;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  white-space: nowrap;
   letter-spacing: -0.1mm;
+  white-space: nowrap;
+}
+
+/* Time in the day columns is printed sideways, reading bottom-to-top like the
+   sample .xls files. A transform is used instead of writing-mode because the
+   PDF export rasterises the DOM with html2canvas, which ignores writing-mode
+   and would lay the time out horizontally inside the narrow column. */
+.doc-table--schedule .day-cell > span,
+.doc-table--payment .day-cell > span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  white-space: nowrap;
 }
 
 .doc-table--schedule tbody tr {
@@ -3241,6 +3253,7 @@ img {
 .doc-table--attendance .time-cell {
   font-size: 15pt;
   white-space: nowrap;
+  text-align: center;
 }
 
 .doc-table--attendance tr.is-absent td {
@@ -3251,6 +3264,7 @@ img {
 .doc-table--attendance .signature-cell {
   font-weight: 400;
   font-size: 15pt;
+  text-align: center;
 }
 
 .attendance-sign {

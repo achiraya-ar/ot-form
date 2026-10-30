@@ -145,7 +145,10 @@ export function SetInfoEditor({
       <div className="editor-section">
         <div className="editor-section__head">
           <h3>ข้อความอ้างอิง</h3>
-          <p>ใช้ในคำสั่งแต่งตั้งและบันทึกข้อความ</p>
+          <p>
+            ใช้ในคำสั่งแต่งตั้งและบันทึกข้อความ แก้เลขที่หนังสือ วันที่
+            และชื่อเรื่องอ้างอิงได้เมื่อมีการเปลี่ยนแปลง
+          </p>
         </div>
         <Field label="คำสั่งกระทรวงสาธารณสุข">
           <textarea

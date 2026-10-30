@@ -128,13 +128,13 @@ export function Form4Document({
                         </>
                       )}
                       <td className="center time-cell">
-                        {row.absent || !row.timeIn || row.timeIn === "-"
+                        {!row.timeIn || row.timeIn === "-"
                           ? ""
                           : `${formatTimeDoc(row.timeIn)}น.`}
                       </td>
                       <td className="center signature-cell">{row.absent ? "-" : ""}</td>
                       <td className="center time-cell">
-                        {row.absent || !row.timeOut || row.timeOut === "-"
+                        {!row.timeOut || row.timeOut === "-"
                           ? ""
                           : `${formatTimeDoc(row.timeOut)}น.`}
                       </td>

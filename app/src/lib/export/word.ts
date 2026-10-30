@@ -21,11 +21,14 @@ import { saveBlob } from "./save";
 import type { AppSettings, DocumentSet } from "../../types";
 import { assetUrl } from "../../components/ui";
 import { personFullName } from "../../data/defaults";
-import { getForm1Rows, getSetShifts } from "../selectors";
+import {
+  documentPeriodPhrase,
+  getDocumentShifts,
+  getForm1Rows,
+} from "../selectors";
 import {
   formatDateDoc,
   formatDateDocOrderIssued,
-  formatMonthYearDoc,
   formatOrderNumber,
   formatTimeHeaderDoc,
   toThaiDigits,
@@ -166,7 +169,8 @@ function paginateOrderRows(rows: ReturnType<typeof getForm1Rows>) {
 export async function exportOrderDocx(set: DocumentSet, settings: AppSettings) {
   const garuda = await loadImage("garuda.png");
   const rows = getForm1Rows(set, settings);
-  const shifts = getSetShifts(set, settings);
+  const shifts = getDocumentShifts(set, settings);
+  const periodPhrase = documentPeriodPhrase(set);
   const director = set.signatories.director;
   const controller = set.signatories.controller;
   const tableWidth = 9242;
@@ -289,10 +293,7 @@ export async function exportOrderDocx(set: DocumentSet, settings: AppSettings) {
         }),
         new Paragraph({ spacing: { after: 60 }, children: [] }),
         paragraph(
-          `เพื่อให้การปฏิบัติหน้าที่เป็นไปด้วยความเรียบร้อยและมีประสิทธิภาพ ${shortDepartment} ${set.org.groupName} มีความประสงค์ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการประจำเดือน ${formatMonthYearDoc(
-            set.month,
-            set.year,
-          )} โดยอาศัยอำนาจตาม${toThaiDigits(set.org.ministryRef)} จึงขอแต่งตั้งผู้มีรายนามดังต่อไปนี้ขึ้นปฏิบัติงานนอกเวลาราชการ`,
+          `เพื่อให้การปฏิบัติหน้าที่เป็นไปด้วยความเรียบร้อยและมีประสิทธิภาพ ${shortDepartment} ${set.org.groupName} มีความประสงค์ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ${periodPhrase} โดยอาศัยอำนาจตาม${toThaiDigits(set.org.ministryRef)} จึงขอแต่งตั้งผู้มีรายนามดังต่อไปนี้ขึ้นปฏิบัติงานนอกเวลาราชการ`,
           {
             alignment: AlignmentType.JUSTIFIED,
             indentFirstLineMm: 25,
@@ -376,12 +377,13 @@ export async function exportOrderDocx(set: DocumentSet, settings: AppSettings) {
 
 export async function exportMemoDocx(set: DocumentSet, settings: AppSettings) {
   const garuda = await loadImage("garuda-small.png");
-  const shifts = getSetShifts(set, settings);
+  const shifts = getDocumentShifts(set, settings);
   const shortTime = (time: string) =>
     toThaiDigits(time.replace(":", ".").replace(/^0/, ""));
   const timeText = shifts
     .map((shift) => `${shortTime(shift.start)}-${shortTime(shift.end)} น.`)
     .join(" และ");
+  const periodPhrase = documentPeriodPhrase(set);
   const groupHead = set.signatories.groupHead;
   const director = set.signatories.director;
   const controller = set.signatories.controller;
@@ -441,10 +443,7 @@ export async function exportMemoDocx(set: DocumentSet, settings: AppSettings) {
     }),
     new Paragraph({ spacing: { after: 80 }, children: [] }),
     paragraph(
-      `ด้วย${set.org.department} ${set.org.groupName} ${set.org.hospitalName} มีความประสงค์จะจัดเจ้าหน้าที่ขึ้นปฏิบัติงานนอกเวลาราชการ ประจำเดือน ${formatMonthYearDoc(
-        set.month,
-        set.year,
-      )} โดยทำการนอกเวลาราชการ ตั้งแต่เวลา ${timeText} โดยมีเจ้าหน้าที่ปฏิบัติงาน ดังรายชื่อพร้อมตารางการปฏิบัติงานที่แนบมาพร้อมนี้`,
+      `ด้วย${set.org.department} ${set.org.groupName} ${set.org.hospitalName} มีความประสงค์จะจัดเจ้าหน้าที่ขึ้นปฏิบัติงานนอกเวลาราชการ ${periodPhrase} โดยทำการนอกเวลาราชการ ตั้งแต่เวลา ${timeText} โดยมีเจ้าหน้าที่ปฏิบัติงาน ดังรายชื่อพร้อมตารางการปฏิบัติงานที่แนบมาพร้อมนี้`,
       { alignment: AlignmentType.JUSTIFIED, indentFirstLine: true },
     ),
     new Paragraph({ spacing: { after: 160 }, children: [] }),

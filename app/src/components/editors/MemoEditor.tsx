@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { AppSettings, DocumentSet, SignatoryMap } from "../../types";
 import { Button, Field, Modal, DateInput, useToast } from "../ui";
 import { personFullName } from "../../data/defaults";
-import { getSetShifts, getSetStaff } from "../../lib/selectors";
+import { getDocumentShifts, getSetStaff } from "../../lib/selectors";
 import { formatDateUi, formatTimeRangeUi } from "../../lib/thai";
 import { SignatoryFields } from "./SignatoryFields";
 
@@ -24,7 +24,7 @@ export function MemoEditor({
 }) {
   const notify = useToast();
   const staff = getSetStaff(set, settings);
-  const shifts = getSetShifts(set, settings);
+  const shifts = getDocumentShifts(set, settings);
   const [memoNumber, setMemoNumber] = useState(set.memoNumber);
   const [issueDate, setIssueDate] = useState(set.issueDate);
   const [controllerId, setControllerId] = useState(set.controllerId);
