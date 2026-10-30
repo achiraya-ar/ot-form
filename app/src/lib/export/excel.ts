@@ -8,17 +8,21 @@ import {
   totalPayment,
 } from "../selectors";
 import {
-  formatBaht,
-  formatThaiDate,
-  formatThaiDateShort,
-  formatThaiMonthYear,
-  formatThaiNumber,
-  formatTimeThai,
+  formatDateDoc,
+  formatDateDocOfficial,
+  formatDateShortDoc,
+  formatMonthYearDoc,
+  formatNumberDoc,
+  formatTimeDoc,
   thaiBahtText,
   toThaiDigits,
 } from "../thai";
 
 const FONT = "TH SarabunPSK";
+
+function formalName(name: string): string {
+  return name.replace(/^น\.ส\./, "นางสาว");
+}
 
 type Align = "left" | "center" | "right" | "justify";
 
@@ -143,7 +147,7 @@ export async function exportScheduleXlsx(set: DocumentSet, settings: AppSettings
   const ws = workbook.addWorksheet("ตารางเวร");
   pageSetup(ws, "landscape", {
     fitToHeight: 1,
-    margins: { left: 0.25, right: 0.25, top: 0.3, bottom: 0.3 },
+    margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75 },
   });
 
   ws.getColumn(1).width = 3.2;
@@ -167,7 +171,7 @@ export async function exportScheduleXlsx(set: DocumentSet, settings: AppSettings
     ws,
     2,
     1,
-    `ส่วนราชการ ${set.org.hospitalName} จังหวัด ${set.org.province} ประจำเดือน ${formatThaiMonthYear(
+    `ส่วนราชการ ${set.org.hospitalName} จังหวัด ${set.org.province} ประจำเดือน ${formatMonthYearDoc(
       set.month,
       set.year,
     )}`,
@@ -175,37 +179,35 @@ export async function exportScheduleXlsx(set: DocumentSet, settings: AppSettings
   );
   ws.getRow(2).height = 23;
   merge(ws, 3, 1, 3, lastCol);
-  applyCell(ws, 3, 1, `ลงวันที่ ${formatThaiDate(set.issueDate)}`, {
+  applyCell(ws, 3, 1, `ลงวันที่ ${formatDateDocOfficial(set.issueDate)}`, {
     size: 14,
     align: "center",
     bold: true,
   });
   ws.getRow(3).height = 23;
 
-  merge(ws, 4, 1, 5, 1);
   merge(ws, 4, 2, 5, 2);
   merge(ws, 4, 3, 5, 3);
   merge(ws, 4, dayStart, 4, dayStart + days - 1);
   merge(ws, 4, totalCol, 5, totalCol);
   merge(ws, 4, noteCol, 5, noteCol);
 
-  applyCell(ws, 4, 1, "ลำดับ", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
-  applyCell(ws, 4, 2, "ชื่อ", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
-  applyCell(ws, 4, 3, "ตำแหน่ง", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
+  applyCell(ws, 4, 1, "ลำดับ", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 5, 1, "ที่", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 4, 2, "ชื่อ", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 4, 3, "ตำแหน่ง", { bold: true, size: 11, align: "center" });
   applyCell(ws, 4, dayStart, "วันที่ปฏิบัติงานนอกเวลาราชการ", {
     bold: true,
     size: 12,
     align: "center",
-    fill: "FFF2F2F2",
   });
-  applyCell(ws, 4, totalCol, "รวมวัน", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
-  applyCell(ws, 4, noteCol, "หมายเหตุ", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
+  applyCell(ws, 4, totalCol, "รวมวัน", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 4, noteCol, "หมายเหตุ", { bold: true, size: 11, align: "center" });
   for (let day = 1; day <= days; day += 1) {
     applyCell(ws, 5, dayStart + day - 1, toThaiDigits(day), {
       bold: true,
       size: 9,
       align: "center",
-      fill: "FFF2F2F2",
     });
   }
   ws.getRow(4).height = 36;
@@ -254,11 +256,6 @@ export async function exportScheduleXlsx(set: DocumentSet, settings: AppSettings
 
   const tableEnd = rowIndex - 1;
   borderRange(ws, 4, 1, Math.max(tableEnd, 5), lastCol);
-
-  merge(ws, tableEnd + 2, 1, tableEnd + 2, 3);
-  applyCell(ws, tableEnd + 2, 1, "หมายเหตุ", { size: 12 });
-  merge(ws, tableEnd + 2, dayStart, tableEnd + 2, lastCol);
-  applyCell(ws, tableEnd + 2, dayStart, "", { size: 12 });
   ws.pageSetup.printTitlesRow = "4:5";
 
   return saveWorkbook(
@@ -275,7 +272,9 @@ export async function exportAttendanceXlsx(
   const workbook = new ExcelJS.Workbook();
   const ws = workbook.addWorksheet("บัญชีลงเวลา");
   pageSetup(ws, "portrait", {
-    fitToPage: false,
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
     margins: {
       left: 0.709,
       right: 0.709,
@@ -286,7 +285,7 @@ export async function exportAttendanceXlsx(
     },
   });
 
-  const widths = [10.5, 9.88, 22.25, 8.88, 10.62, 8.88, 10.62];
+  const widths = [13.5, 9.88, 29.5, 8.88, 10.62, 8.88, 10.62];
   widths.forEach((width, index) => {
     ws.getColumn(index + 1).width = width;
   });
@@ -303,7 +302,7 @@ export async function exportAttendanceXlsx(
     ws,
     2,
     1,
-    `${set.org.department} ${set.org.hospitalName} ประจำเดือน ${formatThaiMonthYear(
+    `${set.org.departmentShort || set.org.department} ${set.org.hospitalName} ประจำเดือน ${formatMonthYearDoc(
       set.month,
       set.year,
     )}`,
@@ -318,47 +317,49 @@ export async function exportAttendanceXlsx(
       bold: true,
       size: 16,
       align: "center",
-      fill: "FFF2F2F2",
     });
   });
   ws.getRow(4).height = 21;
 
-  let rowIndex = 5;
-  for (const row of rows) {
-    if (row.showDate) {
-      merge(ws, rowIndex, 1, rowIndex + row.dateSpan - 1, 1);
-      applyCell(ws, rowIndex, 1, formatThaiDateShort(row.date), {
+  const writeRows = (startRow: number, list: typeof rows) => {
+    let rowIndex = startRow;
+    for (const row of list) {
+      if (row.showDate) {
+        merge(ws, rowIndex, 1, rowIndex + row.dateSpan - 1, 1);
+        applyCell(ws, rowIndex, 1, formatDateShortDoc(row.date), {
+          size: 16,
+          align: "center",
+        });
+      }
+      if (row.showStaff) {
+        merge(ws, rowIndex, 2, rowIndex + row.staffSpan - 1, 2);
+        applyCell(ws, rowIndex, 2, "นอกเวลา", { size: 16, align: "center" });
+        merge(ws, rowIndex, 3, rowIndex + row.staffSpan - 1, 3);
+        applyCell(
+          ws,
+          rowIndex,
+          3,
+          `${row.staff.prefix}${row.staff.firstName} ${row.staff.lastName}`,
+          { size: 16 },
+        );
+      }
+      applyCell(ws, rowIndex, 4, row.absent || !row.timeIn || row.timeIn === "-" ? "" : `${formatTimeDoc(row.timeIn)}น.`, {
         size: 16,
         align: "center",
       });
+      applyCell(ws, rowIndex, 5, row.absent ? "-" : "", { size: 16, align: "center" });
+      applyCell(ws, rowIndex, 6, row.absent || !row.timeOut || row.timeOut === "-" ? "" : `${formatTimeDoc(row.timeOut)}น.`, {
+        size: 16,
+        align: "center",
+      });
+      applyCell(ws, rowIndex, 7, row.absent ? "-" : "", { size: 16, align: "center" });
+      ws.getRow(rowIndex).height = 21;
+      rowIndex += 1;
     }
-    if (row.showStaff) {
-      merge(ws, rowIndex, 2, rowIndex + row.staffSpan - 1, 2);
-      applyCell(ws, rowIndex, 2, "นอกเวลา", { size: 16, align: "center" });
-      merge(ws, rowIndex, 3, rowIndex + row.staffSpan - 1, 3);
-      applyCell(
-        ws,
-        rowIndex,
-        3,
-        `${row.staff.prefix}${row.staff.firstName} ${row.staff.lastName}`,
-        { size: 16 },
-      );
-    }
-    applyCell(ws, rowIndex, 4, row.absent || row.timeIn === "-" ? "" : `${formatTimeThai(row.timeIn)}น.`, {
-      size: 16,
-      align: "center",
-    });
-    applyCell(ws, rowIndex, 5, row.absent ? "-" : "", { size: 16, align: "center" });
-    applyCell(ws, rowIndex, 6, row.absent || row.timeOut === "-" ? "" : `${formatTimeThai(row.timeOut)}น.`, {
-      size: 16,
-      align: "center",
-    });
-    applyCell(ws, rowIndex, 7, row.absent ? "-" : "", { size: 16, align: "center" });
-    ws.getRow(rowIndex).height = 21;
-    rowIndex += 1;
-  }
+    return rowIndex;
+  };
 
-  borderRange(ws, 4, 1, Math.max(rowIndex - 1, 4), 7);
+  let rowIndex = writeRows(5, rows);
 
   if (rows.length === 0) {
     merge(ws, 5, 1, 5, 7);
@@ -379,7 +380,7 @@ export async function exportAttendanceXlsx(
     dateGroups.push({ start, end, size: end - start + 1 });
   });
 
-  const PAGE_ROWS = 30;
+  const PAGE_ROWS = 27;
   const breaks: number[] = [];
   let pageRows = 0;
   dateGroups.forEach((group, index) => {
@@ -397,6 +398,17 @@ export async function exportAttendanceXlsx(
     pageRows += group.size;
   });
 
+  // If the last data page is too full for the signature, repeat the final
+  // date group on a fresh signature page.
+  const lastBreak = breaks.length > 0 ? breaks[breaks.length - 1] : 4;
+  const lastPageRows = rowIndex - 1 - lastBreak;
+  if (rows.length > 0 && lastPageRows > 18) {
+    const lastDate = rows[rows.length - 1].date;
+    const carryRows = rows.filter((row) => row.date === lastDate);
+    breaks.push(rowIndex - 1);
+    rowIndex = writeRows(rowIndex, carryRows);
+  }
+
   if (breaks.length > 0) {
     const breaksApi = ws as unknown as {
       rowBreaks: { id: number; max: number; min: number; man: number }[];
@@ -406,23 +418,28 @@ export async function exportAttendanceXlsx(
     }
   }
 
+  borderRange(ws, 4, 1, Math.max(rowIndex - 1, 4), 7);
+
   const controller = set.signatories.controller;
-  const signRow = rowIndex;
-  merge(ws, signRow, 5, signRow, 7);
-  applyCell(ws, signRow, 5, "ลงชื่อ........................................................", {
+  const signRow = rowIndex + 1;
+  merge(ws, signRow, 4, signRow, 7);
+  applyCell(ws, signRow, 4, "ลงชื่อ........................................................", {
     size: 16,
     align: "center",
   });
-  merge(ws, signRow + 1, 5, signRow + 1, 7);
-  applyCell(ws, signRow + 1, 5, `(${controller.name})`, {
-    size: 16,
+  merge(ws, signRow + 1, 4, signRow + 1, 7);
+  applyCell(ws, signRow + 1, 4, `(${formalName(controller.name)})`, {
+    size: 14,
     align: "center",
   });
-  merge(ws, signRow + 2, 5, signRow + 2, 7);
-  applyCell(ws, signRow + 2, 5, controller.position.split("\n").join(" "), {
-    size: 16,
+  merge(ws, signRow + 2, 4, signRow + 2, 7);
+  applyCell(ws, signRow + 2, 4, controller.position.split("\n").join(" "), {
+    size: 14,
     align: "center",
   });
+  ws.getRow(signRow).height = 21;
+  ws.getRow(signRow + 1).height = 21;
+  ws.getRow(signRow + 2).height = 21;
 
   ws.pageSetup.printTitlesRow = "4:4";
 
@@ -446,7 +463,7 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
   const ws = workbook.addWorksheet("หลักฐานการจ่ายเงิน");
   pageSetup(ws, "landscape", {
     fitToHeight: 1,
-    margins: { left: 0.25, right: 0.25, top: 0.3, bottom: 0.3 },
+    margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75 },
   });
 
   ws.getColumn(1).width = 3.2;
@@ -474,7 +491,7 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
     ws,
     2,
     1,
-    `ส่วนราชการ ${set.org.hospitalName} จังหวัด ${set.org.province} ประจำเดือน ${formatThaiMonthYear(
+    `ส่วนราชการ ${set.org.hospitalName} จังหวัด ${set.org.province} ประจำเดือน ${formatMonthYearDoc(
       set.month,
       set.year,
     )}`,
@@ -482,7 +499,7 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
   );
   ws.getRow(2).height = 23;
   merge(ws, 3, 1, 3, lastCol);
-  applyCell(ws, 3, 1, `ลงวันที่ ${formatThaiDate(set.issueDate)}`, {
+  applyCell(ws, 3, 1, `ลงวันที่ ${formatDateDocOfficial(set.issueDate)}`, {
     size: 14,
     align: "center",
     bold: true,
@@ -500,52 +517,45 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
   merge(ws, 4, signCol, 5, signCol);
   merge(ws, 4, noteCol, 5, noteCol);
 
-  applyCell(ws, 4, 1, "ลำดับ", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
-  applyCell(ws, 4, 2, "ชื่อ", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
-  applyCell(ws, 4, 3, "ตำแหน่ง", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
+  applyCell(ws, 4, 1, "ลำดับ", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 4, 2, "ชื่อ", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 4, 3, "ตำแหน่ง", { bold: true, size: 11, align: "center" });
   applyCell(ws, 4, 4, "อัตราเงิน\nตอบแทน", {
     bold: true,
     size: 11,
     align: "center",
-    fill: "FFF2F2F2",
   });
   applyCell(ws, 4, dayStart, "วันที่ปฏิบัติงานนอกเวลาราชการ", {
     bold: true,
     size: 12,
     align: "center",
-    fill: "FFF2F2F2",
   });
-  applyCell(ws, 4, totalCol, "รวมวัน", { bold: true, size: 11, align: "center", fill: "FFF2F2F2" });
-  applyCell(ws, 4, amountCol, "จำนวนเงิน\n(บาท)", {
+  applyCell(ws, 4, totalCol, "รวมวัน", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 4, amountCol, "จำนวน\nเงิน (บาท)", {
     bold: true,
     size: 11,
     align: "center",
-    fill: "FFF2F2F2",
   });
-  applyCell(ws, 4, dateCol, "วัน/เดือน/ปี", {
+  applyCell(ws, 4, dateCol, "วัน/เดือน/ปี\nที่รับเงิน", {
     bold: true,
     size: 11,
     align: "center",
-    fill: "FFF2F2F2",
   });
   applyCell(ws, 4, signCol, "ลายมือชื่อผู้รับเงิน", {
     bold: true,
     size: 11,
     align: "center",
-    fill: "FFF2F2F2",
   });
   applyCell(ws, 4, noteCol, "หมายเหตุ", {
     bold: true,
     size: 11,
     align: "center",
-    fill: "FFF2F2F2",
   });
   for (let day = 1; day <= days; day += 1) {
     applyCell(ws, 5, dayStart + day - 1, toThaiDigits(day), {
       bold: true,
       size: 9,
       align: "center",
-      fill: "FFF2F2F2",
     });
   }
   ws.getRow(4).height = 36;
@@ -572,7 +582,7 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
       { size: 12 },
     );
     applyCell(ws, rowIndex, 3, row.staff.position, { size: 12 });
-    applyCell(ws, rowIndex, 4, formatThaiNumber(row.rate, 2), {
+    applyCell(ws, rowIndex, 4, formatNumberDoc(row.rate, 2), {
       size: 14,
       align: "center",
     });
@@ -580,7 +590,7 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
       size: 12,
       align: "center",
     });
-    applyCell(ws, rowIndex, amountCol, formatThaiNumber(row.amount, 2), {
+    applyCell(ws, rowIndex, amountCol, formatNumberDoc(row.amount, 2), {
       size: 12,
       align: "right",
     });
@@ -588,7 +598,7 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
       ws,
       rowIndex,
       dateCol,
-      set.paymentDate ? formatThaiDate(set.paymentDate) : "",
+      set.paymentDate ? formatDateDoc(set.paymentDate) : "",
       { size: 12, align: "center" },
     );
     applyCell(ws, rowIndex, signCol, "", { size: 12 });
@@ -619,18 +629,16 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
   const total = totalPayment(set, settings);
   const totalRow = tableEnd + 2;
   merge(ws, totalRow, 1, totalRow, 3);
-  applyCell(ws, totalRow, 1, "รวมจ่ายเงินทั้งสิ้น (ตัวอักษร)", {
-    bold: true,
-    size: 12,
-  });
-  merge(ws, totalRow, 4, totalRow, amountCol - 1);
-  applyCell(ws, totalRow, 4, thaiBahtText(total), { size: 12 });
-  applyCell(ws, totalRow, amountCol, formatBaht(total), {
-    bold: true,
-    size: 12,
-    align: "right",
-  });
-  borderRange(ws, totalRow, 1, totalRow, lastCol);
+  applyCell(ws, totalRow, 1, "รวมจ่ายเงินทั้งสิ้น (ตัวอักษร)", { size: 12 });
+  merge(ws, totalRow, 4, totalRow, lastCol);
+  applyCell(
+    ws,
+    totalRow,
+    4,
+    `.................  ${thaiBahtText(total)}  ................`,
+    { size: 11, align: "center", wrap: false },
+  );
+  ws.getRow(totalRow).height = 24;
 
   const certifyRow = totalRow + 1;
   merge(ws, certifyRow, 1, certifyRow, lastCol);
@@ -644,9 +652,7 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
 
   const payer = set.signatories.payer;
   const director = set.signatories.director;
-  const nursingHead = set.signatories.nursingHead;
   const auditor = set.signatories.auditor;
-  const controller = set.signatories.controller;
 
   const third = Math.floor(lastCol / 3);
   const blocks: [number, number][] = [
@@ -659,42 +665,45 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
     certifyRow + 3,
     certifyRow + 4,
     certifyRow + 5,
-    certifyRow + 6,
-    certifyRow + 7,
   ];
+  ws.getRow(certifyRow).height = 22;
+  for (const row of sigRows) ws.getRow(row).height = 26;
+  const directorLines = director.position.split("\n").filter(Boolean);
   const signatureBlocks = [
     {
-      label1: "ลงชื่อ……………………………………  หัวหน้าผู้ควบคุม",
-      name1: controller.name,
-      pos1: controller.position.split("\n").join(" "),
-      label2: "ลงชื่อ……………………………………  หัวหน้ากลุ่มการพยาบาล",
-      name2: nursingHead.name || "..............................",
-      pos2: nursingHead.position,
+      label: "ลงชื่อ……………………………………  หัวหน้าผู้ควบคุม",
+      name: "",
+      pos: "",
+      bottomLabel: "ลงชื่อ……………………………………  ผู้ตรวจสอบ",
+      bottomName: auditor.name,
     },
     {
-      label1: "ลงชื่อ……………………………………  ผู้จ่ายเงิน",
-      name1: payer.name,
-      pos1: payer.position,
-      label2: "ลงชื่อ……………………………………  ผู้ตรวจสอบ",
-      name2: auditor.name || "..............................",
-      pos2: auditor.position,
+      label: "ลงชื่อ……………………………………  ผู้จ่ายเงิน",
+      name: payer.name,
+      pos: payer.position,
+      bottomLabel: "",
+      bottomName: "",
     },
     {
-      label1: "ลงชื่อ……………………………………  ผู้อนุมัติ",
-      name1: director.name,
-      pos1: director.position.split("\n").join(" "),
-      label2: "",
-      name2: "",
-      pos2: "",
+      label: "ลงชื่อ……………………………………  ผู้อนุมัติ",
+      name: director.name,
+      pos: directorLines[0] ?? "",
+      bottomLabel: "",
+      bottomName: directorLines[1] ?? "",
     },
   ];
   signatureBlocks.forEach((block, blockIndex) => {
     const [start, end] = blocks[blockIndex];
-    const values = [block.label1, block.name1, block.pos1, block.label2, block.name2, block.pos2];
+    const values = [
+      block.label,
+      block.name ? `(${block.name})` : "",
+      blockIndex === 0 ? block.bottomLabel : block.pos,
+      blockIndex === 0 ? (block.bottomName ? `(${block.bottomName})` : "") : block.bottomName,
+    ];
     values.forEach((value, rowOffset) => {
       merge(ws, sigRows[rowOffset], start, sigRows[rowOffset], end);
       applyCell(ws, sigRows[rowOffset], start, value, {
-        size: 12,
+        size: rowOffset >= 2 ? 9.5 : 11,
         align: "center",
       });
     });

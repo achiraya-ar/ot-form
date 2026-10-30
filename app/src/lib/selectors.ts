@@ -9,7 +9,7 @@ import type {
 } from "../types";
 import { assignmentKey, personFullName } from "../data/defaults";
 import {
-  formatTimeRangeShortTh,
+  formatTimeRangeDoc,
   formatTimeThai,
   getDaysInMonth,
   shiftHours,
@@ -208,7 +208,7 @@ export function getForm3Rows(set: DocumentSet, settings: AppSettings): Form3Staf
         if (isAbsent(set, date, staff.id, shift.id)) {
           cells[date][shift.id] = "-";
         } else {
-          cells[date][shift.id] = formatTimeRangeShortTh(shift.start, shift.end);
+          cells[date][shift.id] = formatTimeRangeDoc(shift.start, shift.end);
         }
       }
     }
@@ -280,8 +280,8 @@ export function getForm4Rows(set: DocumentSet, settings: AppSettings): Form4Row[
           showStaff: index === 0,
           staffSpan,
           shift,
-          timeIn: absent ? "-" : record?.timeIn ?? shift.start,
-          timeOut: absent ? "-" : record?.timeOut ?? shift.end,
+          timeIn: absent ? "" : record?.timeIn ?? shift.start,
+          timeOut: absent ? "" : record?.timeOut ?? shift.end,
           absent,
           note: record?.note,
         });

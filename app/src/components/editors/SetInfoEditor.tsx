@@ -126,6 +126,13 @@ export function SetInfoEditor({
             onChange={(event) => setOrg({ ...org, department: event.target.value })}
           />
         </Field>
+        <Field label="ชื่องานแบบสั้น" hint="ใช้ในหัวใบลงเวลา">
+          <input
+            className="input"
+            value={org.departmentShort ?? ""}
+            onChange={(event) => setOrg({ ...org, departmentShort: event.target.value })}
+          />
+        </Field>
         <Field label="กลุ่มงาน" required>
           <input
             className="input"

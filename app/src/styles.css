@@ -49,7 +49,7 @@
 
   --font-sans: "Sarabun", "IBM Plex Sans Thai", "Noto Sans Thai", -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-doc: "Sarabun", "TH SarabunPSK", "Noto Sans Thai", serif;
+  --font-doc: "TH Sarabun New", "TH SarabunPSK", "Sarabun", "Noto Sans Thai", serif;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -2735,8 +2735,8 @@ img {
 
 .doc-title {
   text-align: center;
-  font-size: 20pt;
-  font-weight: 700;
+  font-size: 16pt;
+  font-weight: 400;
   line-height: 1.2;
   margin: 0 0 1.5mm;
 }
@@ -2751,16 +2751,16 @@ img {
 }
 
 .doc-indent {
-  text-indent: 12mm;
+  text-indent: 25mm;
 }
 
 .doc-order-number {
-  font-size: 14pt;
+  font-size: 16pt;
   margin-bottom: 1.5mm;
 }
 
 .doc-subject {
-  font-size: 14pt;
+  font-size: 16pt;
   line-height: 1.35;
 }
 
@@ -2778,7 +2778,7 @@ img {
 .doc-table th,
 .doc-table td {
   border: 0.45mm solid #000;
-  padding: 1.2mm 1.5mm;
+  padding: 0.9mm 1.2mm;
   vertical-align: middle;
   word-wrap: break-word;
 }
@@ -2786,26 +2786,39 @@ img {
 .doc-table th {
   font-weight: 700;
   text-align: center;
-  background: #f3f4f6;
+  background: transparent;
 }
 
 .doc-table--order {
-  font-size: 12pt;
+  font-size: 16pt;
   margin-top: 1mm;
+  line-height: 1;
+}
+
+.doc-table--order th,
+.doc-table--order td {
+  padding: 0.6mm 1.2mm;
 }
 
 .doc-table--order th {
-  font-size: 12pt;
+  font-size: 16pt;
+  font-weight: 400;
 }
 
 .doc-table--order .doc-date-cell {
-  text-align: left;
-  padding-left: 2mm;
+  text-align: center;
+  padding-left: 1mm;
 }
 
 .doc-table--order .doc-name-cell {
-  text-align: left;
-  padding-left: 2mm;
+  text-align: center;
+  padding-left: 1mm;
+}
+
+.doc--order {
+  padding: 10mm 25.4mm 5mm;
+  font-size: 16pt;
+  line-height: 1;
 }
 
 .doc-empty-cell {
@@ -2825,11 +2838,14 @@ img {
 }
 
 .doc-after-table {
-  margin-top: 3mm;
+  margin-top: 4mm;
+  text-indent: 25mm;
 }
 
 .doc-issued {
-  margin-top: 4mm;
+  margin-top: 8mm;
+  margin-left: 59mm;
+  text-align: left;
 }
 
 .doc-sign {
@@ -2841,67 +2857,74 @@ img {
   width: 90mm;
   margin-left: auto;
   margin-right: auto;
+  margin-top: 14mm;
   line-height: 1.35;
 }
 
 .doc-sign__name {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 /* Memo */
 
 .doc--memo {
-  padding: 15mm 18mm 15mm 25mm;
-  font-size: 13.5pt;
+  padding: 6.3mm 20mm 10mm 30mm;
+  font-size: 16pt;
+  line-height: 1.3;
 }
 
 .memo-brand {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 2mm;
-  margin-bottom: 4mm;
+  justify-content: center;
+  min-height: 15mm;
+  margin-bottom: 1mm;
 }
 
 .memo-brand img {
+  position: absolute;
+  left: 0;
+  top: 0;
   display: block;
 }
 
 .memo-brand h1 {
-  font-size: 24pt;
+  font-size: 29pt;
   font-weight: 700;
+  line-height: 1.1;
   letter-spacing: 0.5px;
 }
 
 .memo-meta {
   display: grid;
-  gap: 1.2mm;
+  gap: 0.8mm;
 }
 
 .memo-line {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: baseline;
   gap: 1.2mm;
-  font-size: 13.5pt;
-  line-height: 1.35;
+  font-size: 16pt;
+  line-height: 1.3;
   min-width: 0;
 }
 
 .memo-line strong {
   flex-shrink: 0;
+  font-size: 20pt;
   font-weight: 700;
+  line-height: 1.15;
 }
 
-.memo-dots {
-  flex: 1 1 22mm;
-  min-width: 22mm;
-  height: 1em;
-  border-bottom: 0.3mm dotted #000;
-  margin-left: 1mm;
-}
-
-.memo-line--plain .memo-dots {
-  display: none;
+.memo-underline {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0.25mm solid #000;
+  padding-bottom: 0.2mm;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .memo-meta__row {
@@ -2913,32 +2936,37 @@ img {
   flex: 1;
 }
 
+.memo-line--plain strong {
+  font-size: 16pt;
+}
+
 .memo-body {
-  font-size: 13.5pt;
-  line-height: 1.55;
+  font-size: 16pt;
+  line-height: 1.35;
   margin-top: 3mm;
   text-align: justify;
 }
 
 .memo-body--indent {
-  text-indent: 12.5mm;
+  text-indent: 25mm;
 }
 
 .memo-body--center {
   text-align: center;
-  margin-top: 7mm;
+  margin-top: 8mm;
 }
 
 .memo-sign {
   width: 96mm;
   margin-left: auto;
+  margin-right: 0;
   text-align: center;
-  font-size: 14pt;
+  font-size: 16pt;
   line-height: 1.35;
 }
 
 .memo-sign--head {
-  margin-top: 14mm;
+  margin-top: 20mm;
 }
 
 .memo-sign__space {
@@ -2946,19 +2974,20 @@ img {
 }
 
 .memo-sign__line {
-  font-size: 14pt;
+  font-size: 16pt;
   line-height: 1.35;
   white-space: nowrap;
 }
 
 .memo-sign__name {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .memo-approval {
-  width: 110mm;
-  margin-top: 18mm;
-  font-size: 14pt;
+  width: 115mm;
+  margin-top: 24mm;
+  margin-left: 8mm;
+  font-size: 16pt;
   line-height: 1.4;
 }
 
@@ -2968,16 +2997,18 @@ img {
 }
 
 .memo-sign--director {
-  width: 108mm;
-  margin-top: 16mm;
+  width: 90mm;
+  margin-left: auto;
+  margin-right: 0;
+  margin-top: 18mm;
 }
 
 /* Schedule & payment */
 
 .doc--schedule,
 .doc--payment {
-  padding: 9mm 8mm 7mm;
-  font-size: 9pt;
+  padding: 18mm 17.8mm 15mm;
+  font-size: 10pt;
 }
 
 .official-heading {
@@ -2988,22 +3019,25 @@ img {
 }
 
 .official-heading h1 {
-  font-size: 15pt;
+  font-size: 14pt;
   font-weight: 700;
   margin-bottom: 1mm;
 }
 
 .official-heading p {
-  font-size: 11.5pt;
+  font-size: 14pt;
+  font-weight: 700;
   margin: 0;
 }
 
 .official-heading--portrait h1 {
   font-size: 16pt;
+  font-weight: 400;
 }
 
 .official-heading--portrait p {
-  font-size: 12.5pt;
+  font-size: 16pt;
+  font-weight: 400;
 }
 
 .page-mark {
@@ -3016,25 +3050,25 @@ img {
 
 .doc-table--schedule,
 .doc-table--payment {
-  font-size: 6.4pt;
+  font-size: 9pt;
   line-height: 1.08;
 }
 
 .doc-table--schedule th,
 .doc-table--payment th {
-  font-size: 6.4pt;
-  padding: 0.8mm 0.4mm;
+  font-size: 9pt;
+  padding: 0.7mm 0.3mm;
   font-weight: 700;
 }
 
 .doc-table--schedule td,
 .doc-table--payment td {
-  padding: 0.7mm 0.4mm;
+  padding: 0.6mm 0.3mm;
 }
 
 .doc-table--schedule .day-cell,
 .doc-table--payment .day-cell {
-  font-size: 5.2pt;
+  font-size: 6.2pt;
   text-align: center;
   padding: 0.3mm 0.1mm;
   word-break: break-all;
@@ -3046,16 +3080,16 @@ img {
 }
 
 .doc-table--schedule tbody tr {
-  height: 22mm;
+  height: 15mm;
 }
 
 .doc-table--payment tbody tr {
-  height: 22mm;
+  height: 19mm;
 }
 
 .doc-table--schedule .name-cell,
 .doc-table--payment .name-cell {
-  font-size: 6.8pt;
+  font-size: 9pt;
   text-align: left;
   padding-left: 0.8mm;
   line-height: 1.12;
@@ -3063,27 +3097,27 @@ img {
 
 .doc-table--schedule .position-cell,
 .doc-table--payment .position-cell {
-  font-size: 6.2pt;
+  font-size: 8.5pt;
   text-align: left;
   line-height: 1.1;
 }
 
 .doc-table--schedule .total-cell,
 .doc-table--payment .total-cell {
-  font-size: 6.4pt;
+  font-size: 9pt;
 }
 
 .doc-table--payment .amount-cell {
-  font-size: 6.4pt;
+  font-size: 9pt;
   text-align: right;
 }
 
 .doc-table--payment .rate-cell {
-  font-size: 6.2pt;
+  font-size: 8.5pt;
 }
 
 .doc-table--payment .date-received-cell {
-  font-size: 5.6pt;
+  font-size: 8pt;
 }
 
 .doc-table .is-absent {
@@ -3092,7 +3126,7 @@ img {
 }
 
 .day-col {
-  font-size: 5.8pt !important;
+  font-size: 7.5pt !important;
   padding: 0.4mm 0.1mm !important;
 }
 
@@ -3113,85 +3147,100 @@ img {
 .payment-total {
   display: flex;
   align-items: baseline;
-  gap: 3mm;
+  gap: 2.5mm;
   margin-top: 2mm;
-  padding: 1.2mm 2mm;
-  border-top: 0.4mm solid #000;
-  border-bottom: 0.4mm solid #000;
-  font-size: 9pt;
+  font-size: 12pt;
 }
 
 .payment-total strong {
+  flex: 0 0 auto;
+  font-weight: 400;
+}
+
+.payment-total__dots {
   flex: 1;
+  border-bottom: 0.25mm dotted #000;
+  height: 1em;
 }
 
 .payment-total__amount {
-  font-weight: 700;
+  font-weight: 400;
   white-space: nowrap;
 }
 
 .payment-certify {
   margin-top: 2.5mm;
-  font-size: 8.5pt;
+  font-size: 11pt;
 }
 
-.signature-grid {
+.payment-sign {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.5mm 6mm;
-  margin-top: 3mm;
-  font-size: 7.2pt;
-  line-height: 1.3;
+  gap: 2mm 10mm;
+  margin-top: 4mm;
+  font-size: 11pt;
+  line-height: 1.35;
 }
 
-.signature-grid__cell {
+.payment-sign__col {
   text-align: center;
 }
 
-.signature-grid__cell p {
+.payment-sign__col p {
   margin: 0;
 }
 
-.signature-grid__label {
-  font-weight: 700;
+.payment-sign__line {
+  white-space: nowrap;
 }
 
-.signature-grid__name {
-  min-height: 3.6mm;
+.payment-sign__line span {
+  padding-left: 1mm;
+}
+
+.payment-sign__name {
+  min-height: 4mm;
+}
+
+.payment-sign__gap {
+  height: 8mm;
 }
 
 /* Attendance */
 
 .doc--attendance {
-  padding: 14mm 16mm 15mm;
+  padding: 19mm 18mm 17mm;
+  font-size: 15pt;
 }
 
 .doc-table--attendance {
-  font-size: 10.5pt;
-  margin-top: 3mm;
+  font-size: 15pt;
+  margin-top: 7mm;
 }
 
 .doc-table--attendance th {
-  font-size: 10.5pt;
-  padding: 1.5mm 1mm;
+  font-size: 15pt;
+  padding: 1mm 0.8mm;
 }
 
 .doc-table--attendance td {
-  padding: 1.6mm 1.5mm;
-  height: 8.6mm;
+  padding: 0.8mm 1mm;
+  height: 7.4mm;
 }
 
 .doc-table--attendance .date-cell {
-  font-size: 9pt;
+  font-size: 14pt;
   text-align: center;
 }
 
 .doc-table--attendance .name-cell {
-  font-size: 10.5pt;
+  font-size: 15pt;
+  text-align: center;
 }
 
 .doc-table--attendance .time-cell {
-  font-size: 10pt;
+  font-size: 15pt;
+  white-space: nowrap;
 }
 
 .doc-table--attendance tr.is-absent td {
@@ -3201,15 +3250,22 @@ img {
 
 .doc-table--attendance .signature-cell {
   font-weight: 400;
-  font-size: 11pt;
+  font-size: 15pt;
 }
 
 .attendance-sign {
-  width: 85mm;
-  margin: 9mm auto 0;
+  width: 90mm;
+  margin: 10mm auto 0;
   text-align: center;
-  font-size: 12pt;
+  font-size: 16pt;
   line-height: 1.4;
+}
+
+.carry-note {
+  margin: 0 0 1.5mm;
+  text-align: center;
+  font-size: 10pt;
+  color: #333;
 }
 
 .page-footer {

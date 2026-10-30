@@ -1,12 +1,7 @@
 import type { AppSettings, DocumentSet } from "../types";
 import { Paper } from "../components/PaperStage";
 import { getForm3Rows } from "../lib/selectors";
-import {
-  formatThaiDate,
-  formatThaiMonthYear,
-  getDaysInMonth,
-  toThaiDigits,
-} from "../lib/thai";
+import { formatDateDocOfficial, formatMonthYearDoc, getDaysInMonth, toThaiDigits } from "../lib/thai";
 
 function paginateRows<T extends { shifts: unknown[] }>(
   items: T[],
@@ -37,9 +32,9 @@ export function Form3Document({
   settings: AppSettings;
 }) {
   const rows = getForm3Rows(set, settings);
-  const pages = paginateRows(rows, 6);
+  const pages = paginateRows(rows, 8);
   const days = getDaysInMonth(set.year, set.month);
-  const monthLabel = formatThaiMonthYear(set.month, set.year);
+  const monthLabel = formatMonthYearDoc(set.month, set.year);
 
   return (
     <>
@@ -51,8 +46,7 @@ export function Form3Document({
               ส่วนราชการ {set.org.hospitalName} จังหวัด {set.org.province} ประจำเดือน{" "}
               {monthLabel}
             </p>
-            <p>ลงวันที่ {formatThaiDate(set.issueDate)}</p>
-            {pageIndex > 0 && <span className="page-mark">หน้า {toThaiDigits(pageIndex + 1)}</span>}
+            <p>ลงวันที่ {formatDateDocOfficial(set.issueDate)}</p>
           </div>
 
           <table className="doc-table doc-table--schedule">
@@ -61,14 +55,14 @@ export function Form3Document({
               <col style={{ width: "31mm" }} />
               <col style={{ width: "24mm" }} />
               {Array.from({ length: days }, (_, index) => (
-                <col key={index} style={{ width: "5.95mm" }} />
+                <col key={index} style={{ width: "5.4mm" }} />
               ))}
               <col style={{ width: "12mm" }} />
               <col style={{ width: "18mm" }} />
             </colgroup>
             <thead>
               <tr>
-                <th rowSpan={2}>ลำดับ</th>
+                <th>ลำดับ</th>
                 <th rowSpan={2}>ชื่อ</th>
                 <th rowSpan={2}>ตำแหน่ง</th>
                 <th colSpan={days}>วันที่ปฏิบัติงานนอกเวลาราชการ</th>
@@ -76,6 +70,7 @@ export function Form3Document({
                 <th rowSpan={2}>หมายเหตุ</th>
               </tr>
               <tr>
+                <th>ที่</th>
                 {Array.from({ length: days }, (_, index) => (
                   <th key={index} className="day-col">
                     {toThaiDigits(index + 1)}
@@ -141,11 +136,6 @@ export function Form3Document({
               )}
             </tbody>
           </table>
-
-          <div className="official-footnote">
-            <span>หมายเหตุ</span>
-            <span className="official-footnote__line" />
-          </div>
         </Paper>
       ))}
     </>
