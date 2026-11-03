@@ -2,9 +2,10 @@ import type { AppSettings, DocumentSet } from "../types";
 import { Garuda } from "../components/Brand";
 import { Paper } from "../components/PaperStage";
 import {
-  documentPeriodPhrase,
   getDocumentShifts,
   getForm1Rows,
+  orderBodyOf,
+  orderClosingOf,
 } from "../lib/selectors";
 import {
   formatDateDoc,
@@ -61,9 +62,8 @@ export function Form1Document({
   const pages = paginate(rows);
   const shifts = getDocumentShifts(set, settings);
   const director = set.signatories.director;
-  const controller = set.signatories.controller;
-  const periodPhrase = documentPeriodPhrase(set);
-  const shortDepartment = set.org.departmentShort || set.org.department;
+  const bodyText = orderBodyOf(set);
+  const closingText = orderClosingOf(set);
   const orderNumber = set.orderNumber.trim()
     ? formatOrderNumber(set.orderNumber, set.year)
     : `${"\u00a0".repeat(10)}/${toThaiDigits(set.year)}`;
@@ -136,9 +136,7 @@ export function Form1Document({
                 <p className="doc-center doc-subject">{set.org.groupName}</p>
                 <p className="doc-center doc-dots">.....................................</p>
 
-                <p className="doc-justify doc-indent">
-                  {`เพื่อให้การปฏิบัติหน้าที่เป็นไปด้วยความเรียบร้อยและมีประสิทธิภาพ ${shortDepartment} ${set.org.groupName} มีความประสงค์ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ${periodPhrase} โดยอาศัยอำนาจตาม${toThaiDigits(set.org.ministryRef)} จึงขอแต่งตั้งผู้มีรายนามดังต่อไปนี้ขึ้นปฏิบัติงานนอกเวลาราชการ`}
-                </p>
+                <p className="doc-justify doc-indent doc-text--editable">{bodyText}</p>
               </>
             ) : null}
 
@@ -154,9 +152,8 @@ export function Form1Document({
 
             {isLast && (
               <>
-                <p className="doc-justify doc-indent doc-after-table">
-                  ทั้งนี้ให้มีสิทธิ์เบิกเงินตาม{toThaiDigits(set.org.lawRef)} โดยให้ {controller.name}{" "}
-                  เป็นผู้ควบคุมการปฏิบัติงาน
+                <p className="doc-justify doc-indent doc-after-table doc-text--editable">
+                  {closingText}
                 </p>
                 <p className="doc-issued">
                   สั่ง&nbsp;&nbsp;&nbsp;ณ&nbsp;&nbsp;&nbsp;วันที่&nbsp;&nbsp;&nbsp;&nbsp;{formatDateDocOrderIssued(set.issueDate)}

@@ -5,10 +5,7 @@ export const SIGNATORY_LABELS: Record<SignatoryKey, string> = {
   director: "ผู้อำนวยการ / ผู้อนุมัติ",
   groupHead: "หัวหน้ากลุ่มงาน",
   controller: "ผู้ควบคุมการปฏิบัติงาน",
-  nursingHead: "หัวหน้ากลุ่มการพยาบาล",
-  financeOfficer: "เจ้าหน้าที่การเงิน",
   payer: "ผู้จ่ายเงิน",
-  auditor: "ผู้ตรวจสอบ",
 };
 
 export function SignatoryFields({

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { saveBlob } from "./export/save";
 import type {
   AppSettings,
@@ -40,16 +40,13 @@ interface AppContextValue {
   state: AppState;
   settings: AppSettings;
   sets: DocumentSet[];
-  sessionProfile: AppState["session"];
-  currentProfile: AppSettings["profiles"][number] | null;
-  login: (profileId: string) => void;
+  login: () => void;
   logout: () => void;
   createSet: (input: NewSetInput) => DocumentSet;
   updateSet: (id: string, updater: (set: DocumentSet) => DocumentSet) => void;
   deleteSet: (id: string) => void;
   duplicateSet: (id: string) => DocumentSet | null;
   updateSettings: (updater: (settings: AppSettings) => AppSettings) => void;
-  resetSettings: () => void;
   markStepComplete: (id: string, step: StepId) => void;
   reopenStep: (id: string, step: StepId) => void;
   exportBackup: () => void;
@@ -116,7 +113,6 @@ export function mergeSettings(input?: Partial<AppSettings>): AppSettings {
       ...(input.signatories ?? {}),
     } as SignatoryMap,
     numbering: migrateNumbering(input.numbering),
-    profiles: input.profiles?.length ? input.profiles : structuredClone(SETTINGS_DEFAULT.profiles),
   };
 }
 
@@ -156,15 +152,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     persist(state);
   }, [state]);
 
-  const currentProfile = useMemo(() => {
-    if (!state.session) return null;
-    return state.settings.profiles.find((p) => p.id === state.session?.profileId) ?? null;
-  }, [state.session, state.settings.profiles]);
-
-  const login = (profileId: string) => {
+  const login = () => {
     setState((prev) => ({
       ...prev,
-      session: { profileId, loginAt: new Date().toISOString() },
+      session: { loginAt: new Date().toISOString() },
     }));
   };
 
@@ -283,10 +274,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, settings: updater(prev.settings) }));
   };
 
-  const resetSettings = () => {
-    setState((prev) => ({ ...prev, settings: structuredClone(SETTINGS_DEFAULT) }));
-  };
-
   const markStepComplete = (id: string, step: StepId) => {
     updateSet(id, (set) => {
       const completed = new Set<StepId>(set.completedSteps);
@@ -347,8 +334,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     state,
     settings: state.settings,
     sets: state.sets,
-    sessionProfile: state.session,
-    currentProfile,
     login,
     logout,
     createSet,
@@ -356,7 +341,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteSet,
     duplicateSet,
     updateSettings,
-    resetSettings,
     markStepComplete,
     reopenStep,
     exportBackup,

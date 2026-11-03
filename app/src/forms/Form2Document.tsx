@@ -1,11 +1,8 @@
 import type { AppSettings, DocumentSet } from "../types";
 import { Garuda } from "../components/Brand";
 import { Paper } from "../components/PaperStage";
-import {
-  documentPeriodPhrase,
-  getDocumentShifts,
-} from "../lib/selectors";
-import { formatDateDoc, formatTimeDoc, toThaiDigits } from "../lib/thai";
+import { memoBodyOf } from "../lib/selectors";
+import { formatDateDoc, toThaiDigits } from "../lib/thai";
 
 function splitPosition(position: string): string[] {
   return position.split("\n").filter(Boolean);
@@ -18,12 +15,7 @@ export function Form2Document({
   set: DocumentSet;
   settings: AppSettings;
 }) {
-  const shifts = getDocumentShifts(set, settings);
-  const shortTime = (time: string) => formatTimeDoc(time).replace(/^0/, "");
-  const timeText = shifts
-    .map((shift) => `${shortTime(shift.start)}-${shortTime(shift.end)} น.`)
-    .join(" และ");
-  const periodPhrase = documentPeriodPhrase(set);
+  const bodyText = memoBodyOf(set, settings);
   const groupHead = set.signatories.groupHead;
   const director = set.signatories.director;
   const controller = set.signatories.controller;
@@ -61,9 +53,7 @@ export function Form2Document({
         </p>
       </div>
 
-      <p className="memo-body memo-body--indent">
-        {`ด้วย${set.org.department} ${set.org.groupName} ${set.org.hospitalName} มีความประสงค์จะจัดเจ้าหน้าที่ขึ้นปฏิบัติงานนอกเวลาราชการ ${periodPhrase} โดยทำการนอกเวลาราชการ ตั้งแต่เวลา ${timeText} โดยมีเจ้าหน้าที่ปฏิบัติงาน ดังรายชื่อพร้อมตารางการปฏิบัติงานที่แนบมาพร้อมนี้`}
-      </p>
+      <p className="memo-body memo-body--indent memo-body--editable">{bodyText}</p>
 
       <p className="memo-body memo-body--center">
         ทั้งนี้โดยมี {controller.name} เป็นผู้ควบคุมการปฏิบัติงาน

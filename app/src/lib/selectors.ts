@@ -11,10 +11,13 @@ import { assignmentKey, personFullName } from "../data/defaults";
 import {
   formatDateDoc,
   formatMonthYearDoc,
+  formatTimeDoc,
   formatTimeRangeDoc,
   formatTimeThai,
   getDaysInMonth,
+  parseIsoDate,
   shiftHours,
+  toThaiDigits,
 } from "./thai";
 
 export function getPerson(settings: AppSettings, id: string): Person | undefined {
@@ -51,17 +54,159 @@ export function getDocumentShifts(set: DocumentSet, settings: AppSettings): Shif
   );
 }
 
+/** "๑, ๓-๕, ๘" — consecutive selected days are compressed into ranges. */
+function formatDayRuns(dates: string[]): string {
+  const days = [...new Set(dates.map((date) => parseIsoDate(date).getDate()))].sort(
+    (a, b) => a - b,
+  );
+  const parts: string[] = [];
+  let start = days[0];
+  let previous = days[0];
+  for (let index = 1; index <= days.length; index += 1) {
+    const day = days[index];
+    if (day === previous + 1) {
+      previous = day;
+      continue;
+    }
+    parts.push(
+      start === previous
+        ? toThaiDigits(start)
+        : `${toThaiDigits(start)}-${toThaiDigits(previous)}`,
+    );
+    start = day;
+    previous = day;
+  }
+  return parts.join(", ");
+}
+
 /**
- * "ในวันที่ ๑ ตุลาคม ๒๕๖๙" when the request covers a single day, otherwise
- * "ประจำเดือน ตุลาคม ๒๕๖๙", following the dates chosen when creating the set.
+ * Period text for the order and memo, following the date mode chosen when the
+ * set was created:
+ * - month:    "ประจำเดือน ตุลาคม ๒๕๖๙"
+ * - single:   "ในวันที่ ๑ ตุลาคม ๒๕๖๙"
+ * - range:    "ช่วงระหว่างวันที่ ๑-๑๐ ตุลาคม ๒๕๖๙"
+ * - multiple: "ในวันที่ ๑๗, ๒๐-๒๖, ๓๐-๓๑ ตุลาคม ๒๕๖๙"
  */
 export function documentPeriodPhrase(set: DocumentSet): string {
   const dates =
     set.selectedDates.length > 0
       ? [...new Set(set.selectedDates)].sort()
       : [...new Set(set.assignments.map((assignment) => assignment.date))].sort();
+  const monthYear = formatMonthYearDoc(set.month, set.year);
+  if (dates.length === 0 || set.dateMode === "month") {
+    return `ประจำเดือน ${monthYear}`;
+  }
   if (dates.length === 1) return `ในวันที่ ${formatDateDoc(dates[0])}`;
-  return `ประจำเดือน ${formatMonthYearDoc(set.month, set.year)}`;
+  if (set.dateMode === "range") {
+    const first = parseIsoDate(dates[0]).getDate();
+    const last = parseIsoDate(dates[dates.length - 1]).getDate();
+    return `ช่วงระหว่างวันที่ ${toThaiDigits(first)}-${toThaiDigits(last)} ${monthYear}`;
+  }
+  return `ในวันที่ ${formatDayRuns(dates)} ${monthYear}`;
+}
+
+/** Auto-generated opening paragraph of the appointment order. */
+export function orderBodyText(set: DocumentSet): string {
+  const shortDepartment = set.org.departmentShort || set.org.department;
+  return `เพื่อให้การปฏิบัติหน้าที่เป็นไปด้วยความเรียบร้อยและมีประสิทธิภาพ ${shortDepartment} ${set.org.groupName} มีความประสงค์ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ${documentPeriodPhrase(set)} โดยอาศัยอำนาจตาม${toThaiDigits(set.org.ministryRef)} จึงขอแต่งตั้งผู้มีรายนามดังต่อไปนี้ขึ้นปฏิบัติงานนอกเวลาราชการ`;
+}
+
+/** Opening paragraph of the order, using the edited text when customised. */
+export function orderBodyOf(set: DocumentSet): string {
+  return set.orderBody?.trim() ? set.orderBody : orderBodyText(set);
+}
+
+/** Auto-generated closing paragraph of the appointment order. */
+export function orderClosingText(
+  set: DocumentSet,
+  controllerName = set.signatories.controller.name,
+): string {
+  return `ทั้งนี้ให้มีสิทธิ์เบิกเงินตาม${toThaiDigits(set.org.lawRef)} โดยให้ ${controllerName} เป็นผู้ควบคุมการปฏิบัติงาน`;
+}
+
+/** Closing paragraph of the order, using the edited text when customised. */
+export function orderClosingOf(set: DocumentSet): string {
+  return set.orderClosing?.trim() ? set.orderClosing : orderClosingText(set);
+}
+
+interface MemoDateGroup {
+  dates: string[];
+  timeText: string;
+}
+
+const timeTextOf = (shifts: Shift[]): string =>
+  shifts
+    .map((shift) => `${formatTimeDoc(shift.start)}-${formatTimeDoc(shift.end)} น.`)
+    .join(" และ");
+
+/**
+ * Group scheduled dates by the shifts worked on that date, so the memo can say
+ * e.g. "วันที่ ๒, ๖ ... ตั้งแต่เวลา ๑๖.๓๐-๑๘.๓๐ น." separately from the days
+ * that use another shift.
+ */
+function getMemoDateGroups(set: DocumentSet, settings: AppSettings): MemoDateGroup[] {
+  const byDate = new Map<string, Set<string>>();
+  for (const assignment of set.assignments) {
+    const shiftIds = byDate.get(assignment.date) ?? new Set<string>();
+    shiftIds.add(assignment.shiftId);
+    byDate.set(assignment.date, shiftIds);
+  }
+
+  if (byDate.size === 0) {
+    return [
+      {
+        dates: [...new Set(set.selectedDates)].sort(),
+        timeText: timeTextOf(getDocumentShifts(set, settings)),
+      },
+    ];
+  }
+
+  const shiftById = new Map(settings.shifts.map((shift) => [shift.id, shift]));
+  const groups = new Map<string, { shiftIds: string[]; dates: string[] }>();
+  for (const date of [...byDate.keys()].sort()) {
+    const shiftIds = [...(byDate.get(date) ?? [])].sort();
+    const key = shiftIds.join("|");
+    const group = groups.get(key) ?? { shiftIds, dates: [] };
+    group.dates.push(date);
+    groups.set(key, group);
+  }
+
+  return [...groups.values()].map((group) => ({
+    dates: group.dates,
+    timeText: timeTextOf(
+      group.shiftIds
+        .map((id) => shiftById.get(id))
+        .filter((shift): shift is Shift => Boolean(shift))
+        .sort((a, b) => a.start.localeCompare(b.start)),
+    ),
+  }));
+}
+
+/** Auto-generated body paragraph of the approval memo. */
+export function memoBodyText(set: DocumentSet, settings: AppSettings): string {
+  const groups = getMemoDateGroups(set, settings);
+  const monthYear = formatMonthYearDoc(set.month, set.year);
+  const intro = `ด้วย${set.org.department} ${set.org.groupName} ${set.org.hospitalName} มีความประสงค์จะจัดเจ้าหน้าที่ขึ้นปฏิบัติงานนอกเวลาราชการ`;
+  const outro =
+    "โดยมีเจ้าหน้าที่ปฏิบัติงาน ดังรายชื่อพร้อมตารางการปฏิบัติงานที่แนบมาพร้อมนี้";
+
+  if (groups.length <= 1) {
+    const timeText = groups[0]?.timeText ?? "";
+    return `${intro} ${documentPeriodPhrase(set)} โดยทำการนอกเวลาราชการ ตั้งแต่เวลา ${timeText} ${outro}`;
+  }
+
+  const clauses = groups.map((group, index) => {
+    const prefix =
+      index === 0 ? "ในวันที่" : index === groups.length - 1 ? "และวันที่" : "วันที่";
+    return `${prefix} ${formatDayRuns(group.dates)} ${monthYear} โดยทำการนอกเวลาราชการ ตั้งแต่เวลา ${group.timeText}`;
+  });
+
+  return `${intro} ${clauses.join(" ")} ${outro}`;
+}
+
+/** Body of the memo, using the edited text when the user has customised it. */
+export function memoBodyOf(set: DocumentSet, settings: AppSettings): string {
+  return set.memoBody?.trim() ? set.memoBody : memoBodyText(set, settings);
 }
 
 export function getAttendance(

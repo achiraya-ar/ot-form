@@ -7,7 +7,6 @@ import {
   FileText,
   Hash,
   Plus,
-  RotateCcw,
   Save,
   ShieldCheck,
   Trash2,
@@ -22,11 +21,10 @@ import {
   Card,
   Field,
   IconButton,
-  Modal,
   TimeInput,
   useToast,
 } from "../components/ui";
-import { SETTINGS_DEFAULT, newId } from "../data/defaults";
+import { newId } from "../data/defaults";
 import {
   formatNumberUi,
   formatTimeRangeUi,
@@ -46,23 +44,19 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function SettingsScreen({ onBack }: { onBack: () => void }) {
-  const {
-    settings,
-    sets,
-    updateSettings,
-    resetSettings,
-    exportBackup,
-    importBackup,
-  } = useApp();
+  const { settings, sets, updateSettings, exportBackup, importBackup } = useApp();
   const notify = useToast();
   const [tab, setTab] = useState<Tab>("org");
   const [draft, setDraft] = useState<AppSettings>(() => structuredClone(settings));
-  const [resetOpen, setResetOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const save = () => {
     if (!draft.org.hospitalName.trim()) {
       notify("กรุณากรอกชื่อโรงพยาบาล", "error");
+      return;
+    }
+    if (!draft.org.province.trim()) {
+      notify("กรุณากรอกจังหวัด", "error");
       return;
     }
     if (draft.staff.length === 0) {
@@ -265,7 +259,10 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
                   }
                 />
               </Field>
-              <Field label="ชื่องานแบบสั้น" hint="ใช้ในหัวใบลงเวลา">
+              <Field
+                label="ชื่องานแบบสั้น"
+                hint="ใช้ในคำสั่งแต่งตั้งและหัวใบลงเวลา"
+              >
                 <input
                   className="input"
                   value={draft.org.departmentShort}
@@ -329,6 +326,7 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
               </div>
             </div>
             <SignatoryFields
+              keys={["director", "groupHead", "controller", "payer"]}
               value={draft.signatories}
               onChange={(signatories) => setDraft({ ...draft, signatories })}
             />
@@ -507,7 +505,10 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
               <div>
                 <span className="eyebrow">เลขเอกสาร</span>
                 <h2>รูปแบบเลขที่และลำดับอัตโนมัติ</h2>
-                <p>ใช้ token {"{run}"}, {"{year}"}, {"{month}"} หรือ {"{monthName}"}</p>
+                <p>
+                  ใช้ token {"{run}"}, {"{year}"}, {"{month}"} หรือ {"{monthName}"} ·
+                  ลำดับถัดไปจะใช้เมื่อรูปแบบมี {"{run}"}
+                </p>
               </div>
             </div>
             <div className="form-grid form-grid--2">
@@ -541,40 +542,44 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
                   }
                 />
               </Field>
-              <Field label="ลำดับถัดไปของคำสั่ง">
-                <input
-                  type="number"
-                  min={1}
-                  className="input"
-                  value={draft.numbering.nextOrder}
-                  onChange={(event) =>
-                    setDraft({
-                      ...draft,
-                      numbering: {
-                        ...draft.numbering,
-                        nextOrder: Number(event.target.value),
-                      },
-                    })
-                  }
-                />
-              </Field>
-              <Field label="ลำดับถัดไปของบันทึก">
-                <input
-                  type="number"
-                  min={1}
-                  className="input"
-                  value={draft.numbering.nextMemo}
-                  onChange={(event) =>
-                    setDraft({
-                      ...draft,
-                      numbering: {
-                        ...draft.numbering,
-                        nextMemo: Number(event.target.value),
-                      },
-                    })
-                  }
-                />
-              </Field>
+              {draft.numbering.orderPattern.includes("{run}") && (
+                <Field label="ลำดับถัดไปของคำสั่ง">
+                  <input
+                    type="number"
+                    min={1}
+                    className="input"
+                    value={draft.numbering.nextOrder}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        numbering: {
+                          ...draft.numbering,
+                          nextOrder: Number(event.target.value),
+                        },
+                      })
+                    }
+                  />
+                </Field>
+              )}
+              {draft.numbering.memoPattern.includes("{run}") && (
+                <Field label="ลำดับถัดไปของบันทึก">
+                  <input
+                    type="number"
+                    min={1}
+                    className="input"
+                    value={draft.numbering.nextMemo}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        numbering: {
+                          ...draft.numbering,
+                          nextMemo: Number(event.target.value),
+                        },
+                      })
+                    }
+                  />
+                </Field>
+              )}
             </div>
             <div className="number-preview">
               <div>
@@ -649,24 +654,6 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
               </div>
             </Card>
 
-            <Card className="settings-card">
-              <div className="settings-card__head">
-                <div>
-                  <span className="eyebrow">รีเซ็ต</span>
-                  <h2>คืนค่าเริ่มต้นของระบบ</h2>
-                  <p>ล้างค่าตั้งค่า แต่ไม่ลบชุดเอกสารที่บันทึกไว้</p>
-                </div>
-                <RotateCcw size={24} />
-              </div>
-              <p className="settings-hint">
-                ใช้เมื่อต้องการเริ่มต้นรายชื่อพนักงาน เวร ผู้ลงนาม และเลขเอกสารใหม่
-                จากค่าตัวอย่างของโรงพยาบาล
-              </p>
-              <Button variant="danger" onClick={() => setResetOpen(true)}>
-                <RotateCcw size={16} /> คืนค่าเริ่มต้น
-              </Button>
-            </Card>
-
             <Card className="settings-card about-card">
               <div className="settings-card__head">
                 <div>
@@ -691,36 +678,6 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
         </Button>
       </div>
 
-      <Modal
-        open={resetOpen}
-        onClose={() => setResetOpen(false)}
-        title="คืนค่าเริ่มต้นการตั้งค่า?"
-        size="sm"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setResetOpen(false)}>
-              ยกเลิก
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => {
-                resetSettings();
-                setDraft(structuredClone(SETTINGS_DEFAULT));
-                setResetOpen(false);
-                notify("คืนค่าเริ่มต้นการตั้งค่าแล้ว", "info");
-              }}
-            >
-              คืนค่าเริ่มต้น
-            </Button>
-          </>
-        }
-      >
-        <p className="modal-copy">
-          รายชื่อพนักงาน เวร ผู้ลงนาม เลขเอกสาร และผู้ใช้งาน จะกลับไปเป็นค่าตัวอย่าง
-          ชุดเอกสารที่บันทึกไว้จะยังอยู่ แต่หากชุดเดิมใช้พนักงานหรือช่วงเวรที่กำหนดเอง
-          เอกสารอาจแสดงข้อมูลไม่ครบ แนะนำให้สำรองข้อมูลก่อน
-        </p>
-      </Modal>
     </div>
   );
 }

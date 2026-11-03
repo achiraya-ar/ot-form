@@ -100,21 +100,9 @@ export const SIGNATORIES_DEFAULT: SignatoryMap = {
     name: "น.ส.อชิรญาณ์ รมยศิริไทย",
     position: "แพทย์แผนไทยปฏิบัติการ",
   },
-  nursingHead: {
-    name: "",
-    position: "หัวหน้ากลุ่มการพยาบาล",
-  },
-  financeOfficer: {
-    name: "นางสาววรรณฑิกา พรมไทย",
-    position: "เจ้าพนักงานการเงินและบัญชีชำนาญงาน",
-  },
   payer: {
     name: "นางสาววรรณฑิกา พรมไทย",
     position: "เจ้าพนักงานการเงินและบัญชีชำนาญงาน",
-  },
-  auditor: {
-    name: "",
-    position: "",
   },
 };
 
@@ -129,23 +117,6 @@ export const SETTINGS_DEFAULT: AppSettings = {
     nextOrder: 1,
     nextMemo: 1,
   },
-  profiles: [
-    {
-      id: "profile-anchirya",
-      name: "น.ส.อชิรญาณ์ รมยศิริไทย",
-      role: "หัวหน้ากลุ่มการแพทย์แผนไทยและการแพทย์ทางเลือก",
-    },
-    {
-      id: "profile-finance",
-      name: "นางสาววรรณฑิกา พรมไทย",
-      role: "เจ้าพนักงานการเงินและบัญชีชำนาญงาน",
-    },
-    {
-      id: "profile-director",
-      name: "นายพงษ์จุมพฏ นิยมพฤกษ์",
-      role: "ผู้อำนวยการโรงพยาบาลสระโบสถ์",
-    },
-  ],
 };
 
 export function newId(): string {

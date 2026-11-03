@@ -2,8 +2,8 @@ import { useState } from "react";
 import type { AppSettings, DocumentSet, SignatoryMap } from "../../types";
 import { Button, Field, Modal, DateInput, useToast } from "../ui";
 import { personFullName } from "../../data/defaults";
-import { getDocumentShifts, getSetStaff } from "../../lib/selectors";
-import { formatDateUi, formatTimeRangeUi } from "../../lib/thai";
+import { getSetStaff, memoBodyText } from "../../lib/selectors";
+import { formatDateUi } from "../../lib/thai";
 import { SignatoryFields } from "./SignatoryFields";
 
 export function MemoEditor({
@@ -19,13 +19,17 @@ export function MemoEditor({
     memoNumber: string;
     issueDate: string;
     controllerId: string;
+    memoBody: string;
     signatories: SignatoryMap;
   }) => void;
 }) {
   const notify = useToast();
   const staff = getSetStaff(set, settings);
-  const shifts = getDocumentShifts(set, settings);
+  const autoBody = memoBodyText(set, settings);
   const [memoNumber, setMemoNumber] = useState(set.memoNumber);
+  const [memoBody, setMemoBody] = useState(
+    set.memoBody?.trim() ? set.memoBody : autoBody,
+  );
   const [issueDate, setIssueDate] = useState(set.issueDate);
   const [controllerId, setControllerId] = useState(set.controllerId);
   const [signatories, setSignatories] = useState<SignatoryMap>(
@@ -52,7 +56,13 @@ export function MemoEditor({
       notify("กรุณาเลือกวันที่บันทึก", "error");
       return;
     }
-    onSave({ memoNumber: memoNumber.trim(), issueDate, controllerId, signatories });
+    onSave({
+      memoNumber: memoNumber.trim(),
+      issueDate,
+      controllerId,
+      memoBody: memoBody.trim() === autoBody.trim() ? "" : memoBody.trim(),
+      signatories,
+    });
   };
 
   return (
@@ -101,16 +111,24 @@ export function MemoEditor({
 
       <div className="editor-section">
         <div className="editor-section__head">
-          <h3>ช่วงเวลาที่จะแสดงในบันทึก</h3>
-          <p>ดึงจากช่วงเวรที่ตั้งค่าไว้ในระบบ</p>
+          <h3>ข้อความในบันทึก</h3>
+          <p>
+            แก้ไขเพิ่มเติมได้ เช่น เพิ่มชื่อโครงการออกหน่วย — หากแก้ไข
+            ระบบจะใช้ข้อความนี้แทนข้อความอัตโนมัติ
+          </p>
         </div>
-        <div className="shift-preview__list">
-          {shifts.map((shift) => (
-            <div key={shift.id} className="shift-pill">
-              <strong>{shift.name}</strong>
-              <span>{formatTimeRangeUi(shift.start, shift.end)}</span>
-            </div>
-          ))}
+        <Field label="เนื้อความ">
+          <textarea
+            className="input textarea"
+            rows={7}
+            value={memoBody}
+            onChange={(event) => setMemoBody(event.target.value)}
+          />
+        </Field>
+        <div className="editor-actions">
+          <Button variant="secondary" size="sm" onClick={() => setMemoBody(autoBody)}>
+            ใช้ข้อความอัตโนมัติ
+          </Button>
         </div>
       </div>
 

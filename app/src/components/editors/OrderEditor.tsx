@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { AppSettings, DocumentSet, SignatoryMap } from "../../types";
 import { Button, Field, Modal, DateInput, useToast } from "../ui";
 import { personFullName } from "../../data/defaults";
-import { getSetStaff } from "../../lib/selectors";
+import { getSetStaff, orderBodyText, orderClosingText } from "../../lib/selectors";
 import { formatDateUi, toArabicDigits } from "../../lib/thai";
 
 export function OrderEditor({
@@ -18,16 +18,27 @@ export function OrderEditor({
     orderNumber: string;
     issueDate: string;
     controllerId: string;
+    orderBody: string;
+    orderClosing: string;
     signatories: SignatoryMap;
   }) => void;
 }) {
   const notify = useToast();
   const staff = getSetStaff(set, settings);
+  const autoBody = orderBodyText(set);
   const initialPrefix =
     toArabicDigits(set.orderNumber).replace(/\/\s*\d{4}\s*$/, "") || ".......";
   const [orderPrefix, setOrderPrefix] = useState(initialPrefix);
   const [issueDate, setIssueDate] = useState(set.issueDate);
   const [controllerId, setControllerId] = useState(set.controllerId);
+  const [orderBody, setOrderBody] = useState(
+    set.orderBody?.trim() ? set.orderBody : autoBody,
+  );
+  const [orderClosing, setOrderClosing] = useState(
+    set.orderClosing?.trim() ? set.orderClosing : orderClosingText(set),
+  );
+  const [bodyEdited, setBodyEdited] = useState(Boolean(set.orderBody?.trim()));
+  const [closingEdited, setClosingEdited] = useState(Boolean(set.orderClosing?.trim()));
   const [signatories, setSignatories] = useState<SignatoryMap>(
     structuredClone(set.signatories),
   );
@@ -36,10 +47,12 @@ export function OrderEditor({
     setControllerId(id);
     const person = staff.find((item) => item.id === id);
     if (person) {
-      setSignatories((prev) => ({
-        ...prev,
-        controller: { name: personFullName(person), position: person.position },
-      }));
+      const controller = {
+        name: personFullName(person),
+        position: person.position,
+      };
+      setSignatories((prev) => ({ ...prev, controller }));
+      if (!closingEdited) setOrderClosing(orderClosingText(set, controller.name));
     }
   };
 
@@ -52,6 +65,8 @@ export function OrderEditor({
       orderNumber: `${orderPrefix.trim() || "......."}/${set.year}`,
       issueDate,
       controllerId,
+      orderBody: bodyEdited ? orderBody.trim() : "",
+      orderClosing: closingEdited ? orderClosing.trim() : "",
       signatories,
     });
   };
@@ -106,6 +121,62 @@ export function OrderEditor({
             ))}
           </select>
         </Field>
+      </div>
+
+      <div className="editor-section">
+        <div className="editor-section__head">
+          <h3>ข้อความในคำสั่ง</h3>
+          <p>
+            แก้ไขเพิ่มเติมได้ เช่น ชื่อโครงการ — หากแก้ไข
+            ระบบจะใช้ข้อความนี้แทนข้อความอัตโนมัติ
+          </p>
+        </div>
+        <Field label="เนื้อความคำสั่ง">
+          <textarea
+            className="input textarea"
+            rows={6}
+            value={orderBody}
+            onChange={(event) => {
+              setOrderBody(event.target.value);
+              setBodyEdited(true);
+            }}
+          />
+        </Field>
+        <div className="editor-actions">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setOrderBody(autoBody);
+              setBodyEdited(false);
+            }}
+          >
+            ใช้ข้อความอัตโนมัติ
+          </Button>
+        </div>
+        <Field label="ข้อความท้ายตาราง">
+          <textarea
+            className="input textarea"
+            rows={4}
+            value={orderClosing}
+            onChange={(event) => {
+              setOrderClosing(event.target.value);
+              setClosingEdited(true);
+            }}
+          />
+        </Field>
+        <div className="editor-actions">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setOrderClosing(orderClosingText(set, signatories.controller.name));
+              setClosingEdited(false);
+            }}
+          >
+            ใช้ข้อความอัตโนมัติ
+          </Button>
+        </div>
       </div>
 
       <div className="editor-section">

@@ -28,7 +28,7 @@ export function AppShell({
       <header className="top-bar">
         <div className="top-bar__left">
           <button type="button" className="brand-button" onClick={onHome}>
-            <BrandMark size={38} />
+            <BrandMark size={40} className="brand-button__mark" />
             <span className="brand-text">
               <strong>OT-Form</strong>
               <small>บันทึกค่าตอบแทนนอกเวลาราชการ</small>
@@ -43,6 +43,9 @@ export function AppShell({
         </div>
 
         <div className="top-bar__right">
+          <span className="top-bar__status">
+            <span className="dot dot--green" /> พร้อมใช้งาน
+          </span>
           <IconButton label="ตั้งค่าระบบ" onClick={onSettings}>
             <SettingsIcon size={18} />
           </IconButton>

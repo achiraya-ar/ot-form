@@ -1,15 +1,10 @@
 import { useMemo, useState } from "react";
 import { Check, Info, Wallet } from "lucide-react";
 import type { AppSettings, DocumentSet, SignatoryMap } from "../../types";
-import { Badge, Button, Field, Modal, DateInput, useToast } from "../ui";
+import { Badge, Button, Modal } from "../ui";
 import { getSetStaff, staffPayment, totalPayment } from "../../lib/selectors";
 import { personFullName } from "../../data/defaults";
-import {
-  formatBahtUi,
-  formatDateUi,
-  formatMonthYearUi,
-  formatNumberUi,
-} from "../../lib/thai";
+import { formatBahtUi, formatMonthYearUi, formatNumberUi } from "../../lib/thai";
 import { SignatoryFields } from "./SignatoryFields";
 
 export function PaymentEditor({
@@ -23,11 +18,9 @@ export function PaymentEditor({
   onClose: () => void;
   onSave: (patch: {
     rateOverrides: Record<string, number>;
-    paymentDate: string;
     signatories: SignatoryMap;
   }) => void;
 }) {
-  const notify = useToast();
   const staff = getSetStaff(set, settings);
   const [rates, setRates] = useState<Record<string, number>>(() => {
     const map: Record<string, number> = {};
@@ -36,7 +29,6 @@ export function PaymentEditor({
     }
     return map;
   });
-  const [paymentDate, setPaymentDate] = useState(set.paymentDate ?? "");
   const [signatories, setSignatories] = useState<SignatoryMap>(
     structuredClone(set.signatories),
   );
@@ -53,11 +45,7 @@ export function PaymentEditor({
   const total = rows.reduce((sum, row) => sum + row.amount, 0);
 
   const save = () => {
-    if (!paymentDate) {
-      notify("กรุณาเลือกวันที่จ่ายเงิน", "error");
-      return;
-    }
-    onSave({ rateOverrides: rates, paymentDate, signatories });
+    onSave({ rateOverrides: rates, signatories });
   };
 
   return (
@@ -95,9 +83,6 @@ export function PaymentEditor({
             <h3>ตรวจสอบอัตราและยอดจ่ายรายคน</h3>
             <p>แก้ไขอัตราเฉพาะชุดนี้ได้ โดยไม่กระทบอัตราเริ่มต้นของพนักงาน</p>
           </div>
-          <Field label="วันที่จ่ายเงิน" className="payment-date-field">
-            <DateInput value={paymentDate} onChange={setPaymentDate} />
-          </Field>
         </div>
 
         <div className="payment-table-wrap">
@@ -155,9 +140,7 @@ export function PaymentEditor({
 
         <div className="payment-summary-line">
           <Info size={15} />
-          <span>
-            วันที่จ่าย {paymentDate ? formatDateUi(paymentDate) : "ยังไม่ระบุ"}
-          </span>
+          <span>วันที่จ่ายเงินในเอกสารจะเว้นว่างไว้ให้การเงินกรอกเอง</span>
         </div>
 
         <div className="editor-section">
@@ -168,7 +151,7 @@ export function PaymentEditor({
           <SignatoryFields
             value={signatories}
             onChange={setSignatories}
-            keys={["controller", "payer", "financeOfficer", "director", "nursingHead", "auditor"]}
+            keys={["payer", "director"]}
           />
         </div>
       </div>

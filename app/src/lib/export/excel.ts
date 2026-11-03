@@ -8,7 +8,6 @@ import {
   totalPayment,
 } from "../selectors";
 import {
-  formatDateDoc,
   formatDateDocOfficial,
   formatDateShortDoc,
   formatMonthYearDoc,
@@ -594,13 +593,8 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
       size: 12,
       align: "right",
     });
-    applyCell(
-      ws,
-      rowIndex,
-      dateCol,
-      set.paymentDate ? formatDateDoc(set.paymentDate) : "",
-      { size: 12, align: "center" },
-    );
+    // The payment date is filled in by the finance officer on paper.
+    applyCell(ws, rowIndex, dateCol, "", { size: 12, align: "center" });
     applyCell(ws, rowIndex, signCol, "", { size: 12 });
     applyCell(ws, rowIndex, noteCol, "", { size: 12 });
 
@@ -652,7 +646,6 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
 
   const payer = set.signatories.payer;
   const director = set.signatories.director;
-  const auditor = set.signatories.auditor;
 
   const third = Math.floor(lastCol / 3);
   const blocks: [number, number][] = [
@@ -675,7 +668,7 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
       name: "",
       pos: "",
       bottomLabel: "ลงชื่อ……………………………………  ผู้ตรวจสอบ",
-      bottomName: auditor.name,
+      bottomName: "",
     },
     {
       label: "ลงชื่อ……………………………………  ผู้จ่ายเงิน",

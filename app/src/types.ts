@@ -37,14 +37,7 @@ export interface Signatory {
   position: string;
 }
 
-export type SignatoryKey =
-  | "director"
-  | "groupHead"
-  | "controller"
-  | "nursingHead"
-  | "financeOfficer"
-  | "payer"
-  | "auditor";
+export type SignatoryKey = "director" | "groupHead" | "controller" | "payer";
 
 export type SignatoryMap = Record<SignatoryKey, Signatory>;
 
@@ -55,19 +48,12 @@ export interface DocumentNumbering {
   nextMemo: number;
 }
 
-export interface Profile {
-  id: string;
-  name: string;
-  role: string;
-}
-
 export interface AppSettings {
   org: OrgInfo;
   staff: Person[];
   shifts: Shift[];
   signatories: SignatoryMap;
   numbering: DocumentNumbering;
-  profiles: Profile[];
 }
 
 export interface Assignment {
@@ -99,6 +85,12 @@ export interface DocumentSet {
   org: OrgInfo;
   orderNumber: string;
   memoNumber: string;
+  /** Custom opening paragraph of the order; empty means use the generated text. */
+  orderBody?: string;
+  /** Custom closing paragraph of the order; empty means use the generated text. */
+  orderClosing?: string;
+  /** Custom body text for the memo; empty means use the generated text. */
+  memoBody?: string;
   staffIds: string[];
   assignments: Assignment[];
   attendance: Record<string, AttendanceRecord>;
@@ -107,14 +99,12 @@ export interface DocumentSet {
   controllerId: string;
   signatories: SignatoryMap;
   rateOverrides?: Record<string, number>;
-  paymentDate?: string;
   note?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface Session {
-  profileId: string;
   loginAt: string;
 }
 

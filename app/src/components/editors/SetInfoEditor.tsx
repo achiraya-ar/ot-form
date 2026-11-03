@@ -41,6 +41,10 @@ export function SetInfoEditor({
       notify("กรุณาเลือกวันที่ออกเอกสาร", "error");
       return;
     }
+    if (!org.hospitalName.trim() || !org.province.trim()) {
+      notify("กรุณากรอกชื่อโรงพยาบาลและจังหวัด", "error");
+      return;
+    }
     onSave({
       title: title.trim(),
       issueDate,
@@ -126,7 +130,10 @@ export function SetInfoEditor({
             onChange={(event) => setOrg({ ...org, department: event.target.value })}
           />
         </Field>
-        <Field label="ชื่องานแบบสั้น" hint="ใช้ในหัวใบลงเวลา">
+        <Field
+          label="ชื่องานแบบสั้น"
+          hint="ใช้ในคำสั่งแต่งตั้งและหัวใบลงเวลา"
+        >
           <input
             className="input"
             value={org.departmentShort ?? ""}

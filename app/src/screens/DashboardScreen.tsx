@@ -6,6 +6,7 @@ import {
   FileCheck2,
   FolderOpen,
   Plus,
+  Sparkles,
   Trash2,
   Upload,
   Users,
@@ -115,17 +116,38 @@ export function DashboardScreen({
         }
       />
 
-      <Card className="welcome-strip">
-        <BrandMark size={58} />
-        <div className="welcome-strip__text">
-          <strong>ทำเอกสารครบ 5 ไฟล์ในชุดเดียว</strong>
-          <p>กรอกข้อมูลครั้งเดียว ระบบเชื่อมตารางเวร ใบลงเวลา และค่าตอบแทนให้อัตโนมัติ</p>
+      <Card className="dash-hero">
+        <div className="dash-hero__copy">
+          <span className="dash-hero__badge">
+            <Sparkles size={14} /> ภาพรวมเดือนนี้
+          </span>
+          <h2>
+            จัดการค่าตอบแทนนอกเวลา
+            <br />
+            ให้จบในที่เดียว
+          </h2>
+          <p>
+            กรอกข้อมูลครั้งเดียว ระบบเชื่อมตารางเวร ใบลงเวลา
+            และค่าตอบแทนให้อัตโนมัติ
+          </p>
+          <div className="dash-hero__stats">
+            <span className="dash-stat">
+              ทั้งหมด <b>{formatNumberUi(summary.total)}</b> ชุด
+            </span>
+            <span className="dash-stat">
+              กำลังทำ <b>{formatNumberUi(summary.inProgress)}</b>
+            </span>
+            <span className="dash-stat">
+              เสร็จแล้ว <b>{formatNumberUi(summary.completed)}</b>
+            </span>
+            <span className="dash-stat dash-stat--gold">
+              ยอดเดือนนี้ <b>฿ {formatBahtUi(summary.monthTotal)}</b>
+            </span>
+          </div>
         </div>
-        <div className="welcome-strip__stats">
-          <span>ทั้งหมด <b>{formatNumberUi(summary.total)}</b> ชุด</span>
-          <span>กำลังทำ <b>{formatNumberUi(summary.inProgress)}</b></span>
-          <span>เสร็จแล้ว <b>{formatNumberUi(summary.completed)}</b></span>
-          <span>ยอดเดือนนี้ <b>฿ {formatBahtUi(summary.monthTotal)}</b></span>
+        <div className="dash-hero__art" aria-hidden="true">
+          <span className="dash-hero__ring" />
+          <BrandMark size={156} className="dash-hero__mascot" />
         </div>
       </Card>
 

@@ -149,6 +149,8 @@ export function SetWorkspace({
     orderNumber: string;
     issueDate: string;
     controllerId: string;
+    orderBody: string;
+    orderClosing: string;
     signatories: SignatoryMap;
   }) => {
     updateSet(set.id, (current) => ({ ...current, ...patch }));
@@ -159,6 +161,7 @@ export function SetWorkspace({
     memoNumber: string;
     issueDate: string;
     controllerId: string;
+    memoBody: string;
     signatories: SignatoryMap;
   }) => {
     updateSet(set.id, (current) => ({ ...current, ...patch }));
@@ -183,7 +186,6 @@ export function SetWorkspace({
 
   const savePayment = (patch: {
     rateOverrides: Record<string, number>;
-    paymentDate: string;
     signatories: SignatoryMap;
   }) => {
     updateSet(set.id, (current) => ({ ...current, ...patch }));

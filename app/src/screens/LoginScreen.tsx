@@ -1,102 +1,112 @@
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  FileCheck2,
+  ShieldCheck,
+  Sparkles,
+  WalletCards,
+} from "lucide-react";
 import { useApp } from "../lib/store";
 import { BrandMark } from "../components/Brand";
-import { Badge, Button } from "../components/ui";
+import { Button } from "../components/ui";
 
 export function LoginScreen() {
-  const { settings, login } = useApp();
+  const { login } = useApp();
   const handleEnter = () => {
-    login(settings.profiles[0]?.id ?? "default");
+    login();
   };
 
   return (
-    <div className="login login--mascot login--wealth">
-      <div className="login__sky" aria-hidden="true">
-        <span className="star star--1">✦</span>
-        <span className="star star--2">✦</span>
-        <span className="star star--3">✦</span>
-        <span className="star star--4">✦</span>
-        <span className="star star--5">✦</span>
-        <span className="cloud cloud--1" />
-        <span className="cloud cloud--2" />
-        <span className="cloud cloud--3" />
-        <span className="planet planet--1" />
-        <span className="planet planet--2" />
+    <div className="login login--mascot login--aurora">
+      <div className="auth-sky" aria-hidden="true">
+        <span className="auth-orb auth-orb--1" />
+        <span className="auth-orb auth-orb--2" />
+        <span className="auth-orb auth-orb--3" />
+        <span className="auth-cloud auth-cloud--1" />
+        <span className="auth-cloud auth-cloud--2" />
+        <span className="auth-cloud auth-cloud--3" />
+        <span className="auth-spark auth-spark--1">✦</span>
+        <span className="auth-spark auth-spark--2">✦</span>
+        <span className="auth-spark auth-spark--3">✦</span>
+        <span className="auth-spark auth-spark--4">✦</span>
+        <span className="auth-spark auth-spark--5">✦</span>
       </div>
 
-      <div className="login__landing">
-        <section className="login__mascot-stage">
-          <div className="login__mascot-halo" aria-hidden="true" />
-          <div className="login__cloud-platform" aria-hidden="true" />
-
-          <div className="money-note money-note--1" aria-hidden="true">
-            <span>$</span>
-            <small>100</small>
-          </div>
-          <div className="money-note money-note--2" aria-hidden="true">
-            <span>$</span>
-            <small>500</small>
-          </div>
-          <div className="money-note money-note--3" aria-hidden="true">
-            <span>$</span>
-            <small>1000</small>
-          </div>
-          <div className="gold-coin gold-coin--1" aria-hidden="true">
-            $
-          </div>
-          <div className="gold-coin gold-coin--2" aria-hidden="true">
-            $
-          </div>
-          <div className="gold-bar" aria-hidden="true">
-            <span>999.9</span>
+      <div className="auth-shell">
+        <section className="auth-hero">
+          <div className="auth-brand">
+            <BrandMark size={58} className="auth-brand__mark" />
+            <div className="auth-brand__text">
+              <strong>OT-Form</strong>
+              <span>ระบบเอกสารค่าตอบแทนนอกเวลาราชการ</span>
+            </div>
           </div>
 
-          <div className="login__mascot-float">
-            <BrandMark size={320} className="login__mascot" />
+          <div className="auth-mascot">
+            <span className="auth-mascot__halo" />
+            <span className="auth-mascot__ring" />
+            <div className="auth-mascot__float">
+              <BrandMark size={330} className="auth-mascot__img" />
+            </div>
+            <span className="auth-bubble">
+              <Sparkles size={14} /> เอกสารครบ 5 ไฟล์ในชุดเดียว
+            </span>
           </div>
 
-          <span className="login__spark login__spark--1">✦</span>
-          <span className="login__spark login__spark--2">✦</span>
-          <span className="login__spark login__spark--3">✦</span>
-          <span className="login__spark login__spark--4">✦</span>
+          <div className="auth-status">
+            <span className="dot dot--green" /> ข้อมูลเก็บในเครื่องนี้ · ไม่เชื่อมต่ออินเทอร์เน็ต
+          </div>
         </section>
 
-        <section className="login__landing-card">
-          <div className="login__product">
-            <span className="login__product-name">OT-Form</span>
-            <span>ระบบเอกสารค่าตอบแทน</span>
-          </div>
-
-          <Badge tone="gold">
-            <Sparkles size={13} /> เอกสารครบ ๕ ไฟล์ในชุดเดียว
-          </Badge>
+        <section className="auth-card">
+          <span className="auth-card__eyebrow">
+            <Sparkles size={14} /> ยินดีต้อนรับ
+          </span>
 
           <h1>
             บันทึกค่าตอบแทน
             <br />
-            <span>นอกเวลาราชการ</span>
+            <em>นอกเวลาราชการ</em>
           </h1>
 
-          <p>
-            ทำคำสั่ง บันทึกขออนุมัติ ตารางเวร ใบลงเวลา
-            และหลักฐานการจ่ายเงินให้เสร็จในที่เดียว
+          <p className="auth-card__lead">
+            ทำคำสั่ง บันทึกขออนุมัติ ตารางเวร ใบลงเวลา และหลักฐานการจ่ายเงิน
+            ให้เสร็จในที่เดียว
           </p>
 
-          <div className="login__checks">
-            <span>
-              <Check size={14} /> ใช้งานได้ทันที
-            </span>
-            <span>
-              <Check size={14} /> ไม่ต้องใช้รหัสผ่าน
-            </span>
-            <span>
-              <Check size={14} /> ข้อมูลเก็บในเครื่องนี้
-            </span>
-          </div>
+          <ul className="auth-points">
+            <li>
+              <span className="auth-points__icon">
+                <FileCheck2 size={18} />
+              </span>
+              <div>
+                <strong>ครบ 5 เอกสาร</strong>
+                <small>คำสั่ง · บันทึก · ตารางเวร · ลงเวลา · จ่ายเงิน</small>
+              </div>
+            </li>
+            <li>
+              <span className="auth-points__icon">
+                <WalletCards size={18} />
+              </span>
+              <div>
+                <strong>คำนวณค่าตอบแทนอัตโนมัติ</strong>
+                <small>คิดชั่วโมงและยอดจ่ายจากตารางเวรจริง</small>
+              </div>
+            </li>
+            <li>
+              <span className="auth-points__icon">
+                <ShieldCheck size={18} />
+              </span>
+              <div>
+                <strong>ปลอดภัยในเครื่อง</strong>
+                <small>ไม่ต้องใช้รหัสผ่าน และไม่ส่งข้อมูลออกนอกเครื่อง</small>
+              </div>
+            </li>
+          </ul>
 
-          <Button size="lg" variant="gold" className="login__enter" onClick={handleEnter}>
+          <Button size="lg" variant="primary" className="auth-enter" onClick={handleEnter}>
             เข้าใช้งาน <ArrowRight size={18} />
           </Button>
+          <span className="auth-hint">เข้าใช้งานได้ทันที · ไม่ต้องใช้รหัสผ่าน</span>
         </section>
       </div>
     </div>

@@ -2,7 +2,6 @@ import type { AppSettings, DocumentSet } from "../types";
 import { Paper } from "../components/PaperStage";
 import { getForm5Rows, totalPayment } from "../lib/selectors";
 import {
-  formatDateDoc,
   formatDateDocOfficial,
   formatMonthYearDoc,
   formatNumberDoc,
@@ -51,7 +50,6 @@ export function Form5Document({
   const total = totalPayment(set, settings);
   const payer = set.signatories.payer;
   const director = set.signatories.director;
-  const auditor = set.signatories.auditor;
 
   return (
     <>
@@ -170,9 +168,7 @@ export function Form5Document({
                               <td rowSpan={rowSpan} className="center amount-cell">
                                 {formatNumberDoc(row.amount, 2)}
                               </td>
-                              <td rowSpan={rowSpan} className="center date-received-cell">
-                                {set.paymentDate ? formatDateDoc(set.paymentDate) : ""}
-                              </td>
+                              <td rowSpan={rowSpan} className="center date-received-cell" />
                               <td rowSpan={rowSpan} />
                               <td rowSpan={rowSpan} />
                             </>
@@ -207,7 +203,7 @@ export function Form5Document({
                     <p className="payment-sign__line">
                       ลงชื่อ........................................ <span>ผู้ตรวจสอบ</span>
                     </p>
-                    {auditor.name && <p className="payment-sign__name">({auditor.name})</p>}
+                    <p className="payment-sign__name" />
                   </div>
                   <div className="payment-sign__col">
                     <p className="payment-sign__line">
