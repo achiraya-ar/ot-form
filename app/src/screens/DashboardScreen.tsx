@@ -6,7 +6,6 @@ import {
   FileCheck2,
   FolderOpen,
   Plus,
-  Sparkles,
   Trash2,
   Upload,
   Users,
@@ -116,21 +115,15 @@ export function DashboardScreen({
         }
       />
 
-      <Card className="dash-hero">
-        <div className="dash-hero__copy">
-          <span className="dash-hero__badge">
-            <Sparkles size={14} /> ภาพรวมเดือนนี้
-          </span>
-          <h2>
-            จัดการค่าตอบแทนนอกเวลา
-            <br />
-            ให้จบในที่เดียว
-          </h2>
+      <Card className="dash-intro">
+        <div className="dash-intro__copy">
+          <span className="eyebrow">ภาพรวมเดือนนี้</span>
+          <h2>ทำเอกสารครบ 5 ไฟล์ในชุดเดียว</h2>
           <p>
             กรอกข้อมูลครั้งเดียว ระบบเชื่อมตารางเวร ใบลงเวลา
             และค่าตอบแทนให้อัตโนมัติ
           </p>
-          <div className="dash-hero__stats">
+          <div className="dash-intro__stats">
             <span className="dash-stat">
               ทั้งหมด <b>{formatNumberUi(summary.total)}</b> ชุด
             </span>
@@ -145,9 +138,8 @@ export function DashboardScreen({
             </span>
           </div>
         </div>
-        <div className="dash-hero__art" aria-hidden="true">
-          <span className="dash-hero__ring" />
-          <BrandMark size={156} className="dash-hero__mascot" />
+        <div className="dash-intro__art" aria-hidden="true">
+          <BrandMark size={104} className="dash-intro__mascot" />
         </div>
       </Card>
 

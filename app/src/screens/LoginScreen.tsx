@@ -1,113 +1,203 @@
-import {
-  ArrowRight,
-  FileCheck2,
-  ShieldCheck,
-  Sparkles,
-  WalletCards,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "../lib/store";
-import { BrandMark } from "../components/Brand";
-import { Button } from "../components/ui";
+import { Mascot, type MascotMouth } from "../components/Brand";
+import { assetUrl } from "../components/ui";
+
+const PHRASES = [
+  "ค่าตอบแทน ตรวจสอบได้",
+  "เอกสารครบ 5 ไฟล์ในที่เดียว",
+  "เริ่มสร้างชุดเอกสารกันเลย",
+  "เดี๋ยวช่วยจัดการให้นะคะ",
+  "ทำงานนอกเวลา ให้ราบรื่นทุกขั้นตอน",
+];
 
 export function LoginScreen() {
   const { login } = useApp();
+  const [blinking, setBlinking] = useState(false);
+  const [mouth, setMouth] = useState<MascotMouth>("smile");
+  const [bubbleText, setBubbleText] = useState(PHRASES[0]);
+  const [typedText, setTypedText] = useState("");
+  const phraseRef = useRef(1);
+
+  useEffect(() => {
+    // Warm the frame cache so the mouth/eye changes never flash.
+    [
+      "mascot.svg",
+      "mascot-blink.svg",
+      "mascot-talk.svg",
+      "mascot-talk-blink.svg",
+      "mascot-grin.svg",
+      "mascot-grin-blink.svg",
+    ].forEach((name) => {
+      const image = new Image();
+      image.src = assetUrl(name);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!bubbleText) return;
+    setTypedText("");
+
+    let index = 0;
+    const timer = window.setInterval(() => {
+      index += 1;
+      setTypedText(bubbleText.slice(0, index));
+      if (index >= bubbleText.length) window.clearInterval(timer);
+    }, 70);
+
+    return () => window.clearInterval(timer);
+  }, [bubbleText]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timers = new Set<number>();
+
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        const timer = window.setTimeout(() => {
+          timers.delete(timer);
+          resolve();
+        }, ms);
+        timers.add(timer);
+      });
+
+    const blinkLoop = async () => {
+      while (!cancelled) {
+        await wait(2600 + Math.random() * 2400);
+        if (cancelled) return;
+        setBlinking(true);
+        await wait(110);
+        if (cancelled) return;
+        setBlinking(false);
+
+        // Occasionally a quick double blink, like a real person.
+        if (Math.random() < 0.28) {
+          await wait(170);
+          if (cancelled) return;
+          setBlinking(true);
+          await wait(100);
+          if (cancelled) return;
+          setBlinking(false);
+        }
+      }
+    };
+
+    const speak = async (phrase: string) => {
+      const typingMs = phrase.length * 70;
+      const burstEnd = Date.now() + Math.max(2600, typingMs + 500);
+      const shapes: MascotMouth[] = ["talk", "talk", "talk", "grin", "smile"];
+
+      while (!cancelled && Date.now() < burstEnd) {
+        setMouth(shapes[Math.floor(Math.random() * shapes.length)]);
+        await wait(150 + Math.random() * 100);
+      }
+
+      if (cancelled) return;
+      setMouth("smile");
+    };
+
+    const talkLoop = async () => {
+      await wait(700);
+      if (cancelled) return;
+      await speak(PHRASES[0]);
+
+      while (!cancelled) {
+        await wait(5000 + Math.random() * 3000);
+        if (cancelled) return;
+
+        const phrase = PHRASES[phraseRef.current % PHRASES.length];
+        phraseRef.current += 1;
+        setBubbleText(phrase);
+        await speak(phrase);
+      }
+    };
+
+    void blinkLoop();
+    void talkLoop();
+
+    return () => {
+      cancelled = true;
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
+
   const handleEnter = () => {
     login();
   };
 
   return (
-    <div className="login login--mascot login--aurora">
-      <div className="auth-sky" aria-hidden="true">
-        <span className="auth-orb auth-orb--1" />
-        <span className="auth-orb auth-orb--2" />
-        <span className="auth-orb auth-orb--3" />
-        <span className="auth-cloud auth-cloud--1" />
-        <span className="auth-cloud auth-cloud--2" />
-        <span className="auth-cloud auth-cloud--3" />
-        <span className="auth-spark auth-spark--1">✦</span>
-        <span className="auth-spark auth-spark--2">✦</span>
-        <span className="auth-spark auth-spark--3">✦</span>
-        <span className="auth-spark auth-spark--4">✦</span>
-        <span className="auth-spark auth-spark--5">✦</span>
+    <div className="login-toy">
+      <div className="toy-sky" aria-hidden="true">
+        <span className="toy-sun" />
+        <span className="toy-cloud toy-cloud--1" />
+        <span className="toy-cloud toy-cloud--2" />
+        <span className="toy-cloud toy-cloud--3" />
+        <span className="toy-cloud toy-cloud--4" />
+        <span className="toy-cloud toy-cloud--5" />
+        <span className="toy-star toy-star--1">✦</span>
+        <span className="toy-star toy-star--2">✦</span>
+        <span className="toy-star toy-star--3">✦</span>
+        <span className="toy-star toy-star--4">✦</span>
+        <span className="toy-star toy-star--5">✦</span>
+
+        <span className="toy-float toy-float--crown">
+          <img src={assetUrl("toy-crown.svg")} alt="" />
+        </span>
+        <span className="toy-float toy-float--cash">
+          <img src={assetUrl("toy-cash.svg")} alt="" />
+        </span>
+        <span className="toy-float toy-float--coin">
+          <img src={assetUrl("toy-coin.svg")} alt="" />
+        </span>
+        <span className="toy-float toy-float--diamond">
+          <img src={assetUrl("toy-diamond.svg")} alt="" />
+        </span>
+        <span className="toy-float toy-float--goldbar">
+          <img src={assetUrl("toy-goldbar.svg")} alt="" />
+        </span>
+        <span className="toy-float toy-float--necklace">
+          <img src={assetUrl("toy-necklace.svg")} alt="" />
+        </span>
       </div>
 
-      <div className="auth-shell">
-        <section className="auth-hero">
-          <div className="auth-brand">
-            <BrandMark size={58} className="auth-brand__mark" />
-            <div className="auth-brand__text">
-              <strong>OT-Form</strong>
-              <span>ระบบเอกสารค่าตอบแทนนอกเวลาราชการ</span>
-            </div>
-          </div>
-
-          <div className="auth-mascot">
-            <span className="auth-mascot__halo" />
-            <span className="auth-mascot__ring" />
-            <div className="auth-mascot__float">
-              <BrandMark size={330} className="auth-mascot__img" />
-            </div>
-            <span className="auth-bubble">
-              <Sparkles size={14} /> เอกสารครบ 5 ไฟล์ในชุดเดียว
+      <div className="toy-scene">
+        <header className="toy-brand">
+          <span className="toy-wordmark" role="img" aria-label="OT-Form">
+            <span className="toy-wordmark__top" aria-hidden="true">
+              OT
             </span>
-          </div>
-
-          <div className="auth-status">
-            <span className="dot dot--green" /> ข้อมูลเก็บในเครื่องนี้ · ไม่เชื่อมต่ออินเทอร์เน็ต
-          </div>
-        </section>
-
-        <section className="auth-card">
-          <span className="auth-card__eyebrow">
-            <Sparkles size={14} /> ยินดีต้อนรับ
+            <span className="toy-wordmark__banner" aria-hidden="true">
+              FORM
+            </span>
           </span>
+        </header>
 
-          <h1>
-            บันทึกค่าตอบแทน
-            <br />
-            <em>นอกเวลาราชการ</em>
-          </h1>
+        <div className="toy-chat-slot">
+          <span className="toy-chat" aria-hidden="true">
+            {typedText}
+            {typedText.length < bubbleText.length && (
+              <span className="toy-chat__caret" />
+            )}
+          </span>
+        </div>
 
-          <p className="auth-card__lead">
-            ทำคำสั่ง บันทึกขออนุมัติ ตารางเวร ใบลงเวลา และหลักฐานการจ่ายเงิน
-            ให้เสร็จในที่เดียว
-          </p>
+        <button
+          type="button"
+          className="toy-mascot toy-mascot--enter"
+          onClick={handleEnter}
+          aria-label="เข้าใช้งาน"
+        >
+          <span className="toy-cloud-platform" />
+          <Mascot
+            size={320}
+            className="toy-mascot__img"
+            blink={blinking}
+            mouth={mouth}
+          />
+        </button>
 
-          <ul className="auth-points">
-            <li>
-              <span className="auth-points__icon">
-                <FileCheck2 size={18} />
-              </span>
-              <div>
-                <strong>ครบ 5 เอกสาร</strong>
-                <small>คำสั่ง · บันทึก · ตารางเวร · ลงเวลา · จ่ายเงิน</small>
-              </div>
-            </li>
-            <li>
-              <span className="auth-points__icon">
-                <WalletCards size={18} />
-              </span>
-              <div>
-                <strong>คำนวณค่าตอบแทนอัตโนมัติ</strong>
-                <small>คิดชั่วโมงและยอดจ่ายจากตารางเวรจริง</small>
-              </div>
-            </li>
-            <li>
-              <span className="auth-points__icon">
-                <ShieldCheck size={18} />
-              </span>
-              <div>
-                <strong>ปลอดภัยในเครื่อง</strong>
-                <small>ไม่ต้องใช้รหัสผ่าน และไม่ส่งข้อมูลออกนอกเครื่อง</small>
-              </div>
-            </li>
-          </ul>
-
-          <Button size="lg" variant="primary" className="auth-enter" onClick={handleEnter}>
-            เข้าใช้งาน <ArrowRight size={18} />
-          </Button>
-          <span className="auth-hint">เข้าใช้งานได้ทันที · ไม่ต้องใช้รหัสผ่าน</span>
-        </section>
+        <p className="toy-foot">© 2026 OT-Form</p>
       </div>
     </div>
   );

@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="240 25 170 115" width="100%" height="100%">
+<defs>
+    <!-- Background Bright Soft Sky Blue Gradient -->
+    <radialGradient id="bgLightSky" cx="50%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#E0F2FE" />
+      <stop offset="50%" stop-color="#BAE6FD" />
+      <stop offset="100%" stop-color="#7DD3FC" />
+    </radialGradient>
+
+    <!-- Golden & White Starlight Aura Backdrop -->
+    <radialGradient id="auraLightSky" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#FFFBEB" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#FEF08A" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#7DD3FC" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- 3D Diamond Shimmer Gradient -->
+    <linearGradient id="diamondGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="30%" stop-color="#E0F7FA" />
+      <stop offset="70%" stop-color="#80DEEA" />
+      <stop offset="100%" stop-color="#00ACC1" />
+    </linearGradient>
+
+    <!-- 3D Gold Gradients -->
+    <linearGradient id="gold3DGirl" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDE7" />
+      <stop offset="25%" stop-color="#FFD54F" />
+      <stop offset="65%" stop-color="#FFA000" />
+      <stop offset="100%" stop-color="#E65100" />
+    </linearGradient>
+
+    <!-- 3D Skin Gradient -->
+    <radialGradient id="skin3DGirl" cx="35%" cy="25%" r="70%">
+      <stop offset="0%" stop-color="#FFF3E0" />
+      <stop offset="50%" stop-color="#FFE0B2" />
+      <stop offset="80%" stop-color="#FFCC80" />
+      <stop offset="100%" stop-color="#FB8C00" />
+    </radialGradient>
+
+    <!-- 3D Blonde/Light Brown Hair Gradient -->
+    <linearGradient id="hair3DGirl" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFEE58" />
+      <stop offset="40%" stop-color="#FFCA28" />
+      <stop offset="75%" stop-color="#FFA000" />
+      <stop offset="100%" stop-color="#FF6F00" />
+    </linearGradient>
+
+    <!-- 3D Dress Pink Gradient -->
+    <linearGradient id="dress3DGirl" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FF80AB" />
+      <stop offset="40%" stop-color="#FF4081" />
+      <stop offset="80%" stop-color="#C51162" />
+      <stop offset="100%" stop-color="#880E4F" />
+    </linearGradient>
+
+    <!-- 3D Cash Green Gradient -->
+    <linearGradient id="cash3D" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C8E6C9" />
+      <stop offset="50%" stop-color="#4CAF50" />
+      <stop offset="100%" stop-color="#1B5E20" />
+    </linearGradient>
+
+    <!-- ฟิลเตอร์เงานูนสไตล์โดเรมอน (เงาเข้มด้านล่าง + ไฮไลต์สว่างด้านบน) -->
+    <filter id="emboss-3d" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000000" flood-opacity="0.28" />
+      <feDropShadow dx="0" dy="-3" stdDeviation="4" flood-color="#FFFFFF" flood-opacity="0.45" />
+    </filter>
+
+    <filter id="shadowGirl" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#0369A1" flood-opacity="0.3" />
+    </filter>
+
+    <filter id="starGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#FFFFFF" flood-opacity="0.9" />
+    </filter>
+
+    <!-- Clip Path สำหรับทำมุมโค้งมนทั้ง 4 มุม (บนและล่าง) แบบแอปไอคอนสวยๆ -->
+    <clipPath id="roundedAllCorners">
+      <path d="M 0,45 Q 0,0 45,0 L 455,0 Q 500,0 500,45 L 500,455 Q 500,500 455,500 L 45,500 Q 0,500 0,455 Z" />
+    </clipPath>
+  </defs>
+
+  <g transform="translate(290, 48) rotate(16)" filter="url(#emboss-3d)">
+    <path d="M 0,42 L 15,6 L 35,28 L 52,0 L 70,28 L 90,6 L 105,42 Z" fill="url(#gold3DGirl)" />
+    <rect x="0" y="42" width="105" height="15" rx="7" fill="url(#gold3DGirl)" />
+    <circle cx="52" cy="16" r="8" fill="#FF1744" filter="url(#emboss-3d)" />
+    <circle cx="20" cy="24" r="6" fill="#00E5FF" filter="url(#emboss-3d)" />
+    <circle cx="85" cy="24" r="6" fill="#00E5FF" filter="url(#emboss-3d)" />
+  </g>
+</svg>

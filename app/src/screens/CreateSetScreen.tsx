@@ -6,9 +6,13 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  Clock,
+  FileText,
   Info,
   Sparkles,
   Users,
+  Wallet,
   Wand2,
 } from "lucide-react";
 import type { DocumentSet } from "../types";
@@ -131,6 +135,12 @@ export function CreateSetScreen({
   const selectedStaff = settings.staff.filter((person) => staffIds.includes(person.id));
   const autoTitle = `ค่าตอบแทนนอกเวลา ${THAI_MONTHS[month - 1]} ${year}`;
   const weekendCount = effectiveDates.filter(isWeekend).length;
+  const dateModeLabel = {
+    month: "เต็มเดือน",
+    range: "ช่วงวันที่",
+    multiple: "หลายวัน",
+    single: "วันเดียว",
+  }[dateMode];
 
   const changeMonth = (nextMonth: number, nextYear: number) => {
     setMonth(nextMonth);
@@ -209,6 +219,8 @@ export function CreateSetScreen({
         description="เลือกเดือน วันที่ และพนักงาน แล้วระบบจะสร้างเอกสารทั้ง 5 ไฟล์ให้"
       />
 
+      <div className="create-layout">
+        <div className="create-main">
       <div className="phase-tabs">
         {[
           { id: 1 as Phase, label: "งวดและวันที่", icon: <CalendarDays size={16} /> },
@@ -463,34 +475,73 @@ export function CreateSetScreen({
         </Card>
       )}
 
-      <div className="create-summary-bar">
-        <span>{formatMonthYearUi(month, year)}</span>
-        <span>{formatNumberUi(effectiveDates.length)} วัน</span>
-        <span>{formatNumberUi(staffIds.length)} คน</span>
-        <span>
-          ผู้ควบคุม: {controller ? personFullName(controller) : "ยังไม่เลือก"}
-        </span>
-      </div>
+        </div>
 
-      <div className="wizard-actions">
-        {phase > 1 ? (
-          <Button variant="secondary" onClick={() => setPhase(1)}>
-            <ArrowLeft size={16} /> ย้อนกลับ
-          </Button>
-        ) : (
-          <Button variant="secondary" onClick={onBack}>
-            <ArrowLeft size={16} /> กลับหน้าหลัก
-          </Button>
-        )}
-        {phase < 2 ? (
-          <Button variant="primary" onClick={() => goPhase(2)}>
-            ถัดไป <ArrowRight size={16} />
-          </Button>
-        ) : (
-          <Button variant="primary" onClick={submit}>
-            <Sparkles size={16} /> สร้างชุดเอกสาร
-          </Button>
-        )}
+        <aside className="create-aside">
+          <Card className="create-summary-card">
+            <span className="eyebrow">สรุปชุดเอกสาร</span>
+            <h2>{formatMonthYearUi(month, year)}</h2>
+            <div className="create-summary-rows">
+              <div>
+                <span>รูปแบบวันที่</span>
+                <strong>{dateModeLabel}</strong>
+              </div>
+              <div>
+                <span>วันที่เลือก</span>
+                <strong>{formatNumberUi(effectiveDates.length)} วัน</strong>
+              </div>
+              <div>
+                <span>พนักงาน</span>
+                <strong>{formatNumberUi(staffIds.length)} คน</strong>
+              </div>
+              <div>
+                <span>ผู้ควบคุม</span>
+                <strong>{controller ? personFullName(controller) : "ยังไม่เลือก"}</strong>
+              </div>
+            </div>
+            <div className="create-summary-actions">
+              {phase > 1 ? (
+                <Button variant="secondary" onClick={() => setPhase(1)}>
+                  <ArrowLeft size={16} /> ย้อนกลับ
+                </Button>
+              ) : (
+                <Button variant="secondary" onClick={onBack}>
+                  <ArrowLeft size={16} /> กลับหน้าหลัก
+                </Button>
+              )}
+              {phase < 2 ? (
+                <Button variant="primary" onClick={() => goPhase(2)}>
+                  ถัดไป <ArrowRight size={16} />
+                </Button>
+              ) : (
+                <Button variant="primary" onClick={submit}>
+                  <Sparkles size={16} /> สร้างชุดเอกสาร
+                </Button>
+              )}
+            </div>
+          </Card>
+
+          <Card className="create-file-card">
+            <span className="eyebrow">เอกสารในชุด</span>
+            <ul className="create-file-list">
+              <li>
+                <FileText size={14} /> คำสั่งแต่งตั้ง
+              </li>
+              <li>
+                <ClipboardList size={14} /> บันทึกขออนุมัติ
+              </li>
+              <li>
+                <CalendarDays size={14} /> ตารางการปฏิบัติงาน
+              </li>
+              <li>
+                <Clock size={14} /> บัญชีลงเวลา
+              </li>
+              <li>
+                <Wallet size={14} /> หลักฐานการจ่ายเงิน
+              </li>
+            </ul>
+          </Card>
+        </aside>
       </div>
     </div>
   );

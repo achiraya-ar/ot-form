@@ -7,8 +7,46 @@ export function BrandMark({ size = 42, className = "" }: { size?: number; classN
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      <img src={assetUrl("logo.svg")} alt="" />
+      <img src={assetUrl("logo-ot.png")} alt="" />
     </span>
+  );
+}
+
+export type MascotMouth = "smile" | "talk" | "grin";
+
+export function Mascot({
+  size = 280,
+  className = "",
+  blink = false,
+  mouth = "smile",
+  alt = "",
+}: {
+  size?: number;
+  className?: string;
+  blink?: boolean;
+  mouth?: MascotMouth;
+  alt?: string;
+}) {
+  const frame =
+    mouth === "grin"
+      ? blink
+        ? "mascot-grin-blink.svg"
+        : "mascot-grin.svg"
+      : mouth === "talk"
+        ? blink
+          ? "mascot-talk-blink.svg"
+          : "mascot-talk.svg"
+        : blink
+          ? "mascot-blink.svg"
+          : "mascot.svg";
+
+  return (
+    <img
+      className={`mascot ${className}`}
+      src={assetUrl(frame)}
+      alt={alt}
+      style={{ width: size, height: "auto" }}
+    />
   );
 }
 
