@@ -7,7 +7,7 @@ export function BrandMark({ size = 42, className = "" }: { size?: number; classN
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      <img src={assetUrl("logo-ot.png")} alt="" />
+      <img src={assetUrl("logo-ot.svg")} alt="" />
     </span>
   );
 }

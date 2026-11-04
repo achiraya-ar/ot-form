@@ -1,28 +1,30 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
+  Check,
+  ChevronDown,
   Copy,
   FileCheck2,
   FolderOpen,
   Plus,
+  Search,
+  SearchX,
   Trash2,
   Upload,
   Users,
-  Wallet,
+  X,
 } from "lucide-react";
-import type { DocumentSet, SetStatus } from "../types";
-import { setProgress, useApp } from "../lib/store";
+import type { DocumentSet, SetStatus, StepId } from "../types";
+import { useApp } from "../lib/store";
 import { PageHeader } from "../components/AppShell";
 import { BrandMark } from "../components/Brand";
 import {
-  Badge,
   Button,
   Card,
   EmptyState,
   IconButton,
   Modal,
-  ProgressBar,
   useToast,
 } from "../components/ui";
 import { getSetStaff, totalPayment } from "../lib/selectors";
@@ -31,21 +33,39 @@ import {
   formatDateUi,
   formatNumberUi,
   THAI_MONTHS,
+  THAI_MONTHS_SHORT,
   toArabicDigits,
   todayIso,
 } from "../lib/thai";
 
 const STATUS_LABEL: Record<SetStatus, string> = {
-  draft: "ฉบับร่าง",
+  draft: "กำลังทำ",
   in_progress: "กำลังทำ",
   completed: "เสร็จแล้ว",
 };
 
-const STATUS_TONE: Record<SetStatus, "neutral" | "gold" | "green"> = {
-  draft: "neutral",
-  in_progress: "gold",
-  completed: "green",
+type StatusFilter = "all" | "in_progress" | "completed";
+
+const FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: "in_progress", label: "กำลังทำ" },
+  { value: "completed", label: "เสร็จแล้ว" },
+  { value: "all", label: "ทั้งหมด" },
+];
+
+const isInProgress = (set: DocumentSet) =>
+  set.status === "in_progress" || set.status === "draft";
+
+type PeriodOption = {
+  key: string;
+  label: string;
+  shortLabel: string;
+  year: number;
+  month: number;
+  count: number;
 };
+
+const periodKey = (year: number, month: number) =>
+  `${year}-${String(month).padStart(2, "0")}`;
 
 export function DashboardScreen({
   onCreate,
@@ -58,24 +78,139 @@ export function DashboardScreen({
   const notify = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<DocumentSet | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() =>
+    sets.some(isInProgress) ? "in_progress" : "all",
+  );
+  const [period, setPeriod] = useState("all");
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [periodYear, setPeriodYear] = useState<number | null>(null);
+  const periodRef = useRef<HTMLDivElement>(null);
 
-  const now = new Date();
-  const currentBE = now.getFullYear() + 543;
-  const currentMonth = now.getMonth() + 1;
+  const periods = useMemo<PeriodOption[]>(() => {
+    const map = new Map<string, PeriodOption>();
+    for (const set of sets) {
+      const key = periodKey(set.year, set.month);
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        map.set(key, {
+          key,
+          label: `${THAI_MONTHS[set.month - 1]} ${set.year}`,
+          shortLabel: `${THAI_MONTHS_SHORT[set.month - 1]} ${set.year}`,
+          year: set.year,
+          month: set.month,
+          count: 1,
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => b.key.localeCompare(a.key));
+  }, [sets]);
+
+  const activePeriod = useMemo(
+    () => (period === "all" ? null : periods.find((option) => option.key === period) ?? null),
+    [period, periods],
+  );
+
+  const periodYears = useMemo(
+    () => [...new Set(periods.map((option) => option.year))].sort((a, b) => b - a),
+    [periods],
+  );
+
+  const viewingYear = periodYear ?? activePeriod?.year ?? periods[0]?.year ?? null;
+
+  const openPeriodPicker = () => {
+    if (!periodOpen) {
+      setPeriodYear(activePeriod?.year ?? periods[0]?.year ?? null);
+    }
+    setPeriodOpen((open) => !open);
+  };
+
+  useEffect(() => {
+    if (!periodOpen) return;
+
+    const handlePointer = (event: PointerEvent) => {
+      if (periodRef.current && !periodRef.current.contains(event.target as Node)) {
+        setPeriodOpen(false);
+      }
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPeriodOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointer);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointer);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [periodOpen]);
+
+  useEffect(() => {
+    if (period !== "all" && !periods.some((option) => option.key === period)) {
+      setPeriod("all");
+    }
+  }, [period, periods]);
+
+  const periodSets = useMemo(
+    () =>
+      activePeriod
+        ? sets.filter((set) => periodKey(set.year, set.month) === activePeriod.key)
+        : sets,
+    [sets, activePeriod],
+  );
 
   const summary = useMemo(() => {
-    const inProgress = sets.filter((set) => set.status === "in_progress").length;
-    const completed = sets.filter((set) => set.status === "completed").length;
-    const monthTotal = sets
-      .filter((set) => set.month === currentMonth && set.year === currentBE)
-      .reduce((sum, set) => sum + totalPayment(set, settings), 0);
-    return { total: sets.length, inProgress, completed, monthTotal };
-  }, [sets, settings, currentMonth, currentBE]);
+    const inProgress = periodSets.filter(isInProgress).length;
+    const completed = periodSets.filter((set) => set.status === "completed").length;
+    const totalAmount = periodSets.reduce((sum, set) => sum + totalPayment(set, settings), 0);
+    return { total: periodSets.length, inProgress, completed, totalAmount };
+  }, [periodSets, settings]);
 
   const sorted = useMemo(
-    () => [...sets].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-    [sets],
+    () =>
+      [...periodSets].sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        if (a.month !== b.month) return b.month - a.month;
+        return b.updatedAt.localeCompare(a.updatedAt);
+      }),
+    [periodSets],
   );
+
+  const counts = useMemo<Record<StatusFilter, number>>(
+    () => ({
+      all: periodSets.length,
+      in_progress: periodSets.filter(isInProgress).length,
+      completed: periodSets.filter((set) => set.status === "completed").length,
+    }),
+    [periodSets],
+  );
+
+  const filtered = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    return sorted.filter((set) => {
+      if (statusFilter === "in_progress" && !isInProgress(set)) return false;
+      if (statusFilter === "completed" && set.status !== "completed") return false;
+      if (!keyword) return true;
+      const haystack = [
+        set.title,
+        THAI_MONTHS[set.month - 1],
+        THAI_MONTHS_SHORT[set.month - 1],
+        String(set.year),
+        STATUS_LABEL[set.status],
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(keyword);
+    });
+  }, [sorted, query, statusFilter]);
+
+  const clearFilters = () => {
+    setQuery("");
+    setStatusFilter("all");
+    setPeriod("all");
+  };
 
   const handleImport = async (file: File | undefined) => {
     if (!file) return;
@@ -115,127 +250,317 @@ export function DashboardScreen({
         }
       />
 
-      <Card className="dash-intro">
-        <div className="dash-intro__copy">
-          <span className="eyebrow">ภาพรวมเดือนนี้</span>
-          <h2>ทำเอกสารครบ 5 ไฟล์ในชุดเดียว</h2>
-          <p>
-            กรอกข้อมูลครั้งเดียว ระบบเชื่อมตารางเวร ใบลงเวลา
-            และค่าตอบแทนให้อัตโนมัติ
-          </p>
-          <div className="dash-intro__stats">
-            <span className="dash-stat">
-              ทั้งหมด <b>{formatNumberUi(summary.total)}</b> ชุด
-            </span>
-            <span className="dash-stat">
-              กำลังทำ <b>{formatNumberUi(summary.inProgress)}</b>
-            </span>
-            <span className="dash-stat">
-              เสร็จแล้ว <b>{formatNumberUi(summary.completed)}</b>
-            </span>
-            <span className="dash-stat dash-stat--gold">
-              ยอดเดือนนี้ <b>฿ {formatBahtUi(summary.monthTotal)}</b>
-            </span>
+      <Card className="dash-overview">
+        <div className="dash-overview__brand">
+          <BrandMark size={62} className="dash-overview__mark" />
+          <div className="dash-overview__copy">
+            <span className="eyebrow">ระบบชุดเอกสารค่าตอบแทน</span>
+            <h2>ทำครบ 5 ไฟล์ในชุดเดียว</h2>
+            <p>กรอกครั้งเดียว ตารางเวร ใบลงเวลา และค่าตอบแทนเชื่อมกันอัตโนมัติ</p>
           </div>
         </div>
-        <div className="dash-intro__art" aria-hidden="true">
-          <BrandMark size={104} className="dash-intro__mascot" />
+
+        <div className="dash-overview__right">
+          <div className="dash-overview__scope">
+            <span className="dash-overview__scope-label">ช่วงข้อมูล</span>
+            <div className="dash-period-wrap" ref={periodRef}>
+              <button
+                type="button"
+                className={`dash-period ${periodOpen ? "is-open" : ""}`}
+                onClick={openPeriodPicker}
+                aria-haspopup="dialog"
+                aria-expanded={periodOpen}
+                aria-label={`เลือกช่วงข้อมูล ปัจจุบัน ${activePeriod?.label ?? "ทุกช่วงเวลา"}`}
+              >
+                <CalendarDays size={14} aria-hidden="true" />
+                <span className="dash-period__value">
+                  {activePeriod?.label ?? "ทุกช่วงเวลา"}
+                </span>
+                <ChevronDown size={14} aria-hidden="true" />
+              </button>
+
+              {periodOpen && (
+                <div className="dash-period-pop" role="dialog" aria-label="เลือกช่วงข้อมูล">
+                  <div className="dash-period-pop__head">
+                    <strong>เลือกช่วงข้อมูล</strong>
+                    <span>เลือกปี แล้วเลือกเดือนที่มีชุดเอกสาร</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`dash-period-all ${period === "all" ? "is-active" : ""}`}
+                    onClick={() => {
+                      setPeriod("all");
+                      setPeriodOpen(false);
+                    }}
+                  >
+                    <span>ทุกช่วงเวลา</span>
+                    <span>{formatNumberUi(sets.length)} ชุด</span>
+                    {period === "all" && <Check size={14} />}
+                  </button>
+
+                  {periods.length > 0 && (
+                    <>
+                      <div className="dash-period-years" role="group" aria-label="เลือกปี">
+                        {periodYears.map((year) => (
+                          <button
+                            key={year}
+                            type="button"
+                            className={viewingYear === year ? "is-active" : ""}
+                            onClick={() => setPeriodYear(year)}
+                          >
+                            {year}
+                          </button>
+                        ))}
+                      </div>
+
+                      {viewingYear !== null && (
+                        <div
+                          className="dash-period-months"
+                          role="group"
+                          aria-label={`เลือกเดือน พ.ศ. ${viewingYear}`}
+                        >
+                          {THAI_MONTHS_SHORT.map((monthLabel, index) => {
+                            const month = index + 1;
+                            const option = periods.find(
+                              (item) => item.year === viewingYear && item.month === month,
+                            );
+                            return (
+                              <button
+                                key={monthLabel}
+                                type="button"
+                                className={`dash-period-month ${option ? "is-available" : ""} ${
+                                  option && period === option.key ? "is-active" : ""
+                                }`}
+                                disabled={!option}
+                                title={
+                                  option
+                                    ? `${option.label} · ${formatNumberUi(option.count)} ชุด`
+                                    : `${monthLabel} ${viewingYear} · ไม่มีข้อมูล`
+                                }
+                                onClick={() => {
+                                  if (!option) return;
+                                  setPeriod(option.key);
+                                  setPeriodOpen(false);
+                                }}
+                              >
+                                <strong>{monthLabel}</strong>
+                                <span>
+                                  {option ? `${formatNumberUi(option.count)} ชุด` : "—"}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <dl className="dash-overview__stats">
+            <div className="dash-metric dash-metric--progress">
+              <dt>กำลังทำ</dt>
+              <dd>
+                {formatNumberUi(summary.inProgress)}
+                <small>ชุด</small>
+              </dd>
+            </div>
+            <div className="dash-metric dash-metric--done">
+              <dt>เสร็จแล้ว</dt>
+              <dd>
+                {formatNumberUi(summary.completed)}
+                <small>ชุด</small>
+              </dd>
+            </div>
+            <div className="dash-metric">
+              <dt>ชุดทั้งหมด</dt>
+              <dd>
+                {formatNumberUi(summary.total)}
+                <small>ชุด</small>
+              </dd>
+            </div>
+            <div className="dash-metric dash-metric--money">
+              <dt>{activePeriod ? "ยอดของเดือนที่เลือก" : "ยอดรวมทั้งหมด"}</dt>
+              <dd>
+                <span className="dash-metric__unit">฿</span>
+                {formatBahtUi(summary.totalAmount)}
+              </dd>
+            </div>
+          </dl>
         </div>
       </Card>
 
-      {sorted.length === 0 ? (
-        <EmptyState
-          icon={<FolderOpen size={30} />}
-          title="ยังไม่มีชุดเอกสาร"
-          description="เริ่มสร้างชุดแรก แล้วทำเอกสารทั้ง 5 ไฟล์ทีละขั้นได้เลย"
-          action={
-            <Button variant="primary" onClick={onCreate}>
-              <Plus size={16} /> สร้างชุดแรก
-            </Button>
-          }
-        />
-      ) : (
-        <div className="set-list">
-          {sorted.map((set) => {
-            const progress = setProgress(set);
-            const staff = getSetStaff(set, settings);
-            const amount = totalPayment(set, settings);
-            const workDays = new Set(set.assignments.map((assignment) => assignment.date)).size;
-            return (
-              <article
-                key={set.id}
-                className="set-row"
-                onClick={() => onOpenSet(set)}
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") onOpenSet(set);
-                }}
+      <Card className="dash-library">
+        <div className="dash-library__head">
+          <div className="dash-library__heading">
+            <h2>ชุดเอกสารของฉัน</h2>
+            <span>
+              {formatNumberUi(filtered.length)} จาก {formatNumberUi(periodSets.length)} ชุด
+            </span>
+            {activePeriod && (
+              <button
+                type="button"
+                className="dash-scope-chip"
+                onClick={() => setPeriod("all")}
+                title="ดูทุกช่วงเวลา"
               >
-                <div className="set-row__month">
-                  <strong>{THAI_MONTHS[set.month - 1]}</strong>
-                  <span>{formatNumberUi(set.year)}</span>
-                </div>
+                {activePeriod.shortLabel}
+                <X size={11} />
+              </button>
+            )}
+          </div>
 
-                <div className="set-row__main">
-                  <div className="set-row__title">
-                    <h3>{toArabicDigits(set.title)}</h3>
-                    <Badge tone={STATUS_TONE[set.status]}>{STATUS_LABEL[set.status]}</Badge>
-                  </div>
-                  <p className="set-row__meta">
-                    <span>
-                      <CalendarDays size={13} /> {formatNumberUi(workDays)} วันทำ
-                    </span>
-                    <span>
-                      <Users size={13} /> {formatNumberUi(staff.length)} คน
-                    </span>
-                    <span>
-                      <FileCheck2 size={13} /> {formatNumberUi(set.assignments.length)} เวร
-                    </span>
-                    <span>
-                      <Wallet size={13} /> ฿ {formatBahtUi(amount)}
-                    </span>
-                  </p>
-                  <div className="set-row__progress">
-                    <ProgressBar
-                      value={progress}
-                      tone={set.status === "completed" ? "green" : "sky"}
-                    />
-                    <small>{formatNumberUi(progress)}%</small>
-                  </div>
-                </div>
+          <div className="dash-toolbar">
+            <label className="dash-search">
+              <Search size={15} />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="ค้นหาชื่อชุด เดือน หรือปี"
+                aria-label="ค้นหาชุดเอกสาร"
+              />
+              {query && (
+                <button type="button" onClick={() => setQuery("")} aria-label="ล้างคำค้น">
+                  <X size={13} />
+                </button>
+              )}
+            </label>
 
-                <div className="set-row__actions">
-                  <Button size="sm" variant="secondary">
-                    เปิดชุด <ArrowRight size={14} />
-                  </Button>
-                  <IconButton
-                    label="ทำสำเนา"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      const copy = duplicateSet(set.id);
-                      if (copy) {
-                        notify("สร้างสำเนาแล้ว");
-                        onOpenSet(copy);
-                      }
-                    }}
-                  >
-                    <Copy size={15} />
-                  </IconButton>
-                  <IconButton
-                    label="ลบชุดเอกสาร"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setDeleteTarget(set);
-                    }}
-                  >
-                    <Trash2 size={15} />
-                  </IconButton>
-                </div>
-              </article>
-            );
-          })}
+            <div className="dash-filter" role="group" aria-label="กรองตามสถานะ">
+              {FILTERS.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  className={statusFilter === filter.value ? "is-active" : ""}
+                  aria-pressed={statusFilter === filter.value}
+                  onClick={() => setStatusFilter(filter.value)}
+                >
+                  {filter.label}
+                  <span>{formatNumberUi(counts[filter.value])}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      )}
+
+        {sets.length === 0 ? (
+          <EmptyState
+            icon={<FolderOpen size={30} />}
+            title="ยังไม่มีชุดเอกสาร"
+            description="เริ่มสร้างชุดแรก แล้วทำเอกสารทั้ง 5 ไฟล์ทีละขั้นได้เลย"
+            action={
+              <Button variant="primary" onClick={onCreate}>
+                <Plus size={16} /> สร้างชุดแรก
+              </Button>
+            }
+          />
+        ) : filtered.length === 0 ? (
+          <div className="dash-no-result">
+            <span className="dash-no-result__icon">
+              <SearchX size={22} />
+            </span>
+            <div>
+              <strong>ไม่พบชุดเอกสารที่ตรงกับเงื่อนไข</strong>
+              <p>ลองใช้คำค้นอื่น เลือกสถานะอื่น หรือดูทุกช่วงเวลา</p>
+            </div>
+            <Button variant="secondary" size="sm" onClick={clearFilters}>
+              ล้างตัวกรอง
+            </Button>
+          </div>
+        ) : (
+          <div className="set-list">
+            {filtered.map((set) => {
+              const staff = getSetStaff(set, settings);
+              const amount = totalPayment(set, settings);
+              const workDays = new Set(
+                set.assignments.map((assignment) => assignment.date),
+              ).size;
+              return (
+                <article
+                  key={set.id}
+                  className={`set-card is-${set.status}`}
+                  onClick={() => onOpenSet(set)}
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") onOpenSet(set);
+                  }}
+                >
+                  <div className="set-card__month">
+                    <strong>{THAI_MONTHS_SHORT[set.month - 1]}</strong>
+                    <span>{set.year}</span>
+                  </div>
+
+                  <div className="set-card__main">
+                    <div className="set-card__title">
+                      <h3>{toArabicDigits(set.title)}</h3>
+                    </div>
+                    <p className="set-card__meta">
+                      <span>
+                        <CalendarDays size={13} /> {formatNumberUi(workDays)} วันทำ
+                      </span>
+                      <span>
+                        <Users size={13} /> {formatNumberUi(staff.length)} คน
+                      </span>
+                      <span>
+                        <FileCheck2 size={13} /> {formatNumberUi(set.assignments.length)} เวร
+                      </span>
+                    </p>
+                    <div className="set-card__progress">
+                      <span className="set-steps" aria-hidden="true">
+                        {([1, 2, 3, 4, 5] as StepId[]).map((step) => (
+                          <i
+                            key={step}
+                            className={set.completedSteps.includes(step) ? "is-done" : ""}
+                          />
+                        ))}
+                      </span>
+                      <small>{formatNumberUi(set.completedSteps.length)}/5 ไฟล์</small>
+                    </div>
+                  </div>
+
+                  <div className="set-card__side">
+                    <div className="set-card__amount">
+                      <span>ค่าตอบแทน</span>
+                      <strong>฿ {formatBahtUi(amount)}</strong>
+                    </div>
+                    <div className="set-card__actions">
+                      <Button size="sm" variant="soft">
+                        เปิดชุด <ArrowRight size={14} />
+                      </Button>
+                      <IconButton
+                        label="ทำสำเนา"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          const copy = duplicateSet(set.id);
+                          if (copy) {
+                            notify("สร้างสำเนาแล้ว");
+                            onOpenSet(copy);
+                          }
+                        }}
+                      >
+                        <Copy size={15} />
+                      </IconButton>
+                      <IconButton
+                        label="ลบชุดเอกสาร"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setDeleteTarget(set);
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </IconButton>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </Card>
 
       <Modal
         open={Boolean(deleteTarget)}

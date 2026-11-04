@@ -54,11 +54,13 @@ export function AttendanceEditor({
   settings,
   onClose,
   onSave,
+  onAutoSave,
 }: {
   set: DocumentSet;
   settings: AppSettings;
   onClose: () => void;
   onSave: (attendance: Record<string, AttendanceRecord>) => void;
+  onAutoSave?: (attendance: Record<string, AttendanceRecord>) => void;
 }) {
   const notify = useToast();
   const staff = getSetStaff(set, settings);
@@ -118,10 +120,9 @@ export function AttendanceEditor({
     ? dateGroups.filter((group) => (dateStats.get(group.date)?.absent ?? 0) > 0)
     : dateGroups;
 
-  const [expandedDates, setExpandedDates] = useState<Set<string>>(() => {
-    const firstDate = dateGroups[0]?.date;
-    return new Set(firstDate ? [firstDate] : []);
-  });
+  const [expandedDate, setExpandedDate] = useState<string | null>(
+    dateGroups[0]?.date ?? null,
+  );
 
   const summary = useMemo(() => {
     let present = 0;
@@ -173,13 +174,27 @@ export function AttendanceEditor({
     });
   };
 
+  const activeAttendance = () => {
+    const activeKeys = new Set(
+      set.assignments.map((assignment) => assignmentKey(assignment)),
+    );
+    return Object.fromEntries(
+      Object.entries(records).filter(([key]) => activeKeys.has(key)),
+    );
+  };
+
+  const persistDraft = () => {
+    onAutoSave?.(activeAttendance());
+  };
+
   const toggleDate = (date: string) => {
-    setExpandedDates((prev) => {
-      const next = new Set(prev);
-      if (next.has(date)) next.delete(date);
-      else next.add(date);
-      return next;
-    });
+    persistDraft();
+    setExpandedDate((current) => (current === date ? null : date));
+  };
+
+  const closeEditor = () => {
+    persistDraft();
+    onClose();
   };
 
   const markAllPresent = () => {
@@ -225,18 +240,18 @@ export function AttendanceEditor({
       const exceptionDates = dateGroups
         .filter((group) => (dateStats.get(group.date)?.absent ?? 0) > 0)
         .map((group) => group.date);
-      setExpandedDates(new Set(exceptionDates));
+      setExpandedDate(exceptionDates[0] ?? null);
     }
   };
 
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={closeEditor}
       title="บันทึกใบรายชื่อเข้างาน"
       subtitle={`${formatMonthYearUi(set.month, set.year)} · ${formatNumberUi(
         set.assignments.length,
-      )} เวร`}
+      )} เวร · บันทึกอัตโนมัติเมื่อสลับวัน`}
       size="xl"
       className="attendance-modal"
       footer={
@@ -256,21 +271,12 @@ export function AttendanceEditor({
             </span>
           </div>
           <div className="schedule-footer__actions">
-            <Button variant="secondary" onClick={onClose}>
-              ยกเลิก
+            <Button variant="secondary" onClick={closeEditor}>
+              ปิด
             </Button>
             <Button
               variant="primary"
-              onClick={() => {
-                const activeKeys = new Set(
-                  set.assignments.map((assignment) => assignmentKey(assignment)),
-                );
-                onSave(
-                  Object.fromEntries(
-                    Object.entries(records).filter(([key]) => activeKeys.has(key)),
-                  ),
-                );
-              }}
+              onClick={() => onSave(activeAttendance())}
             >
               <Check size={16} /> บันทึกใบลงเวลา
             </Button>
@@ -320,7 +326,7 @@ export function AttendanceEditor({
           <div className="attendance2__list">
             {displayDates.map((group) => {
               const stats = dateStats.get(group.date) ?? { present: 0, absent: 0 };
-              const expanded = expandedDates.has(group.date);
+              const expanded = expandedDate === group.date;
               return (
                 <section
                   key={group.date}

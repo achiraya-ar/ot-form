@@ -1,10 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  ClipboardList,
+  Clock3,
   Download,
+  FileText,
   Info,
   Lock,
   Pencil,
+  Wallet,
 } from "lucide-react";
 import type {
   Assignment,
@@ -16,10 +23,13 @@ import type {
 import { isStepUnlocked, useApp } from "../lib/store";
 import { assignmentKey, personFullName } from "../data/defaults";
 import { getSetStaff, getShift, totalPayment } from "../lib/selectors";
-import { formatBahtUi, formatNumberUi, toArabicDigits } from "../lib/thai";
-import { StepNav } from "../components/StepNav";
+import {
+  formatBahtUi,
+  formatNumberUi,
+  toArabicDigits,
+} from "../lib/thai";
 import { PaperStage } from "../components/PaperStage";
-import { Badge, Button, Card, IconButton, useToast } from "../components/ui";
+import { Button, Card, useToast } from "../components/ui";
 import { Form1Document } from "../forms/Form1Document";
 import { Form2Document } from "../forms/Form2Document";
 import { Form3Document } from "../forms/Form3Document";
@@ -71,6 +81,14 @@ const STEP_META: Record<
   },
 };
 
+const STEP_ICONS = {
+  1: <FileText size={15} />,
+  2: <ClipboardList size={15} />,
+  3: <CalendarDays size={15} />,
+  4: <Clock3 size={15} />,
+  5: <Wallet size={15} />,
+};
+
 export function SetWorkspace({
   setId,
   step,
@@ -85,9 +103,22 @@ export function SetWorkspace({
   const { sets, settings, updateSet, markStepComplete: markStep } = useApp();
   const notify = useToast();
   const [editor, setEditor] = useState<EditorKind>(null);
+  const stepsRef = useRef<HTMLElement>(null);
   const set = sets.find((item) => item.id === setId);
 
   const meta = STEP_META[step];
+
+  useEffect(() => {
+    const container = stepsRef.current;
+    if (!container) return;
+    const active = container.querySelector<HTMLElement>('[aria-current="step"]');
+    active?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [step]);
+
+  useEffect(() => {
+    document.body.classList.add("workbench-open");
+    return () => document.body.classList.remove("workbench-open");
+  }, []);
 
   const staff = useMemo(
     () => (set ? getSetStaff(set, settings) : []),
@@ -236,56 +267,126 @@ export function SetWorkspace({
   };
 
   return (
-    <div className="page page--workspace">
-      <div className="workspace-head">
-        <button type="button" className="back-link" onClick={onBack}>
-          <ArrowLeft size={16} /> กลับหน้าหลัก
-        </button>
-        <div className="workspace-head__row">
-          <div className="workspace-head__title">
-            <div className="workspace-head__eyebrow">
-              <Badge tone={set.status === "completed" ? "green" : "gold"}>
-                {set.status === "completed" ? "เสร็จสมบูรณ์" : "กำลังดำเนินการ"}
-              </Badge>
+    <div className="workbench">
+      <header className="workbench-head">
+        <div className="workbench-head__main">
+          <div className="workbench-head__copy">
+            <button type="button" className="workbench-back" onClick={onBack}>
+              <ArrowLeft size={14} /> กลับหน้าหลัก
+            </button>
+            <div className="workbench-title">
+              <h1>{toArabicDigits(set.title)}</h1>
+              {set.status === "completed" && (
+                <span className="workbench-status is-done">
+                  <span className="dot" />
+                  เสร็จสมบูรณ์
+                </span>
+              )}
             </div>
-            <h1>{toArabicDigits(set.title)}</h1>
-            <p>
-              {formatNumberUi(workDays)} วันทำ · {formatNumberUi(staff.length)} คน ·{" "}
-              {formatNumberUi(set.assignments.length)} เวร · ฿ {formatBahtUi(amount)}
-              {absent > 0 && ` · ไม่มา ${formatNumberUi(absent)} เวร`}
-            </p>
           </div>
-          <div className="workspace-head__actions">
-            <IconButton label="ข้อมูลชุดเอกสาร" onClick={() => setEditor("info")}>
-              <Info size={17} />
-            </IconButton>
-            <IconButton label="ส่งออกเอกสาร" onClick={() => setEditor("export")}>
-              <Download size={17} />
-            </IconButton>
-            <Button variant="primary" size="sm" onClick={() => setEditor(stepToEditor(step))}>
-              <Pencil size={15} /> {meta.editLabel}
+
+          <div className="workbench-actions">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="ข้อมูลชุดเอกสาร"
+              onClick={() => setEditor("info")}
+            >
+              <Info size={15} /> <span>ข้อมูลชุด</span>
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              aria-label="ส่งออกเอกสาร"
+              onClick={() => setEditor("export")}
+            >
+              <Download size={15} /> <span>ส่งออก</span>
             </Button>
           </div>
         </div>
-      </div>
 
-      <div className="workspace-steps">
-        <StepNav set={set} current={step} onSelect={onStepChange} />
-      </div>
+        <div className="workbench-head__meta">
+          <div className="workbench-progress">
+            <div
+              className={`workbench-progress__segments ${
+                set.status === "completed" ? "is-complete" : ""
+              }`}
+              aria-hidden="true"
+            >
+              {([1, 2, 3, 4, 5] as StepId[]).map((id) => (
+                <i
+                  key={id}
+                  className={set.completedSteps.includes(id) ? "is-done" : ""}
+                />
+              ))}
+            </div>
+            <strong>{formatNumberUi(set.completedSteps.length)}/5 ไฟล์</strong>
+          </div>
 
-      {!unlocked ? (
-        <Card className="locked-card">
-          <span className="locked-card__icon">
-            <Lock size={26} />
-          </span>
-          <h2>ยังไม่ถึงขั้นตอนนี้</h2>
-          <p>บันทึกเอกสารขั้นก่อนหน้าให้เรียบร้อยก่อน ระบบจะปลดล็อกไฟล์ถัดไปให้อัตโนมัติ</p>
-          <Button variant="primary" onClick={() => onStepChange((step - 1) as StepId)}>
-            ไปขั้นที่แล้ว
-          </Button>
-        </Card>
-      ) : (
-        <>
+          <div className="workbench-stats">
+            <span>{formatNumberUi(workDays)} วัน</span>
+            <span>{formatNumberUi(staff.length)} คน</span>
+            <span>{formatNumberUi(set.assignments.length)} เวร</span>
+            <span>฿ {formatBahtUi(amount)}</span>
+            {absent > 0 && (
+              <span className="is-warn">ไม่มา {formatNumberUi(absent)} เวร</span>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <nav className="workbench-steps" aria-label="เอกสารในชุด" ref={stepsRef}>
+        {([1, 2, 3, 4, 5] as StepId[]).map((id) => {
+          const item = STEP_META[id];
+          const done = set.completedSteps.includes(id);
+          const available = isStepUnlocked(set, id);
+          const active = step === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`workbench-step ${active ? "is-active" : ""} ${
+                done ? "is-done" : ""
+              } ${!available ? "is-locked" : ""}`}
+              onClick={() => available && onStepChange(id)}
+              disabled={!available}
+              aria-current={active ? "step" : undefined}
+              title={`ไฟล์ที่ ${id} · ${
+                done ? "บันทึกแล้ว" : !available ? "ล็อกอยู่" : "พร้อมทำ"
+              }`}
+            >
+              <span className="workbench-step__num">
+                {done ? <Check size={14} /> : !available ? <Lock size={11} /> : id}
+              </span>
+              <span className="workbench-step__text">
+                <strong>{item.filename}</strong>
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <main className={`workbench-main ${!unlocked ? "is-locked" : ""}`}>
+        {!unlocked ? (
+          <div className="workbench-locked">
+            <Card className="locked-card">
+              <span className="locked-card__icon">
+                <Lock size={26} />
+              </span>
+              <h2>ยังไม่ถึงขั้นตอนนี้</h2>
+              <p>
+                บันทึกเอกสารขั้นก่อนหน้าให้เรียบร้อยก่อน
+                ระบบจะปลดล็อกไฟล์ถัดไปให้อัตโนมัติ
+              </p>
+              <Button
+                variant="primary"
+                onClick={() => onStepChange((step - 1) as StepId)}
+              >
+                ไปขั้นที่แล้ว
+              </Button>
+            </Card>
+          </div>
+        ) : (
           <PaperStage
             title={meta.title}
             orientation={meta.orientation}
@@ -293,7 +394,54 @@ export function SetWorkspace({
           >
             {renderDocument()}
           </PaperStage>
-        </>
+        )}
+      </main>
+
+      {unlocked && (
+        <footer className="workbench-foot">
+          <div className="workbench-foot__left">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={step === 1}
+              onClick={() => onStepChange((step - 1) as StepId)}
+            >
+              <ArrowLeft size={15} /> ก่อนหน้า
+            </Button>
+
+          </div>
+
+          <div className="workbench-foot__actions">
+            {set.completedSteps.includes(step) && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditor(stepToEditor(step))}
+              >
+                <Pencil size={15} /> แก้ไขอีกครั้ง
+              </Button>
+            )}
+            {!set.completedSteps.includes(step) ? (
+              <Button
+                variant="primary"
+                onClick={() => setEditor(stepToEditor(step))}
+              >
+                <Pencil size={15} /> {meta.editLabel}
+              </Button>
+            ) : step < 5 ? (
+              <Button
+                variant="primary"
+                onClick={() => onStepChange((step + 1) as StepId)}
+              >
+                ไปไฟล์ถัดไป <ArrowRight size={15} />
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={() => setEditor("export")}>
+                <Download size={15} /> ส่งออกเอกสาร
+              </Button>
+            )}
+          </div>
+        </footer>
       )}
 
       {editor === "info" && (
@@ -334,6 +482,9 @@ export function SetWorkspace({
           settings={settings}
           onClose={() => setEditor(null)}
           onSave={saveAttendance}
+          onAutoSave={(attendance) => {
+            updateSet(set.id, (current) => ({ ...current, attendance }));
+          }}
         />
       )}
       {editor === "payment" && (
