@@ -72,6 +72,24 @@ export interface AttendanceRecord {
   note?: string;
 }
 
+export interface ShiftExchange {
+  id: string;
+  /** วันที่ของเวรที่ขอแลกเปลี่ยน */
+  date: string;
+  /** ผู้ขอแลกเปลี่ยน (เจ้าของเวรเดิม) */
+  staffId: string;
+  /** เวรเดิมที่ขอแลกเปลี่ยน */
+  shiftId: string;
+  /** ผู้ปฏิบัติงานแทน; null/ว่างหมายถึงไม่มีคนแทน */
+  replacementStaffId?: string | null;
+  /** เหตุผลการแลกเปลี่ยน */
+  reason: string;
+  /** วันที่ยื่นคำขอ */
+  requestDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DocumentSet {
   id: string;
   title: string;
@@ -94,6 +112,8 @@ export interface DocumentSet {
   staffIds: string[];
   assignments: Assignment[];
   attendance: Record<string, AttendanceRecord>;
+  /** ใบขอแลกเปลี่ยนเวรที่แนบกับชุดเอกสารนี้ */
+  shiftExchanges: ShiftExchange[];
   completedSteps: StepId[];
   status: SetStatus;
   controllerId: string;

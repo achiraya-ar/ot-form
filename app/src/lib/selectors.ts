@@ -5,6 +5,7 @@ import type {
   DocumentSet,
   Person,
   Shift,
+  ShiftExchange,
   StepId,
 } from "../types";
 import { assignmentKey, personFullName } from "../data/defaults";
@@ -289,12 +290,93 @@ export function staffPayment(
   };
 }
 
+export function getSetExchanges(set: DocumentSet): ShiftExchange[] {
+  return Array.isArray(set.shiftExchanges) ? set.shiftExchanges : [];
+}
+
+export function exchangePaidHours(
+  set: DocumentSet,
+  settings: AppSettings,
+  exchange: ShiftExchange,
+): number {
+  if (!exchange.replacementStaffId) return 0;
+  const shift = getShift(settings, exchange.shiftId);
+  return shift ? shiftHours(shift.start, shift.end) : 0;
+}
+
+export function exchangeAmount(
+  set: DocumentSet,
+  settings: AppSettings,
+  exchange: ShiftExchange,
+): number {
+  const person = exchange.replacementStaffId
+    ? getPerson(settings, exchange.replacementStaffId)
+    : undefined;
+  if (!person) return 0;
+  const rate = set.rateOverrides?.[person.id] ?? person.ratePerHour;
+  return Math.round(exchangePaidHours(set, settings, exchange) * rate * 100) / 100;
+}
+
+export function exchangePaymentSummary(
+  set: DocumentSet,
+  settings: AppSettings,
+): { hours: number; amount: number } {
+  let hours = 0;
+  let amount = 0;
+  for (const exchange of getSetExchanges(set)) {
+    if (!exchange.replacementStaffId) continue;
+    hours += exchangePaidHours(set, settings, exchange);
+    amount += exchangeAmount(set, settings, exchange);
+  }
+  return {
+    hours: Math.round(hours * 100) / 100,
+    amount: Math.round(amount * 100) / 100,
+  };
+}
+
+export function eligibleReplacementStaff(
+  set: DocumentSet,
+  settings: AppSettings,
+  date: string,
+  originalStaffId: string,
+  shiftId: string,
+  exchangeId?: string,
+): Person[] {
+  const assigned = new Set(
+    set.assignments
+      .filter((assignment) => assignment.date === date)
+      .map((assignment) => assignment.staffId),
+  );
+  const targetShift = getShift(settings, shiftId);
+  return getSetStaff(set, settings).filter((person) => {
+    if (person.id === originalStaffId) return false;
+    if (assigned.has(person.id)) return false;
+
+    const existingReplacements = getSetExchanges(set).filter(
+      (exchange) =>
+        exchange.date === date &&
+        exchange.id !== exchangeId &&
+        exchange.replacementStaffId === person.id,
+    );
+    if (!targetShift) return existingReplacements.length === 0;
+
+    return existingReplacements.every((exchange) => {
+      const otherShift = getShift(settings, exchange.shiftId);
+      if (!otherShift) return true;
+      const overlaps =
+        targetShift.start < otherShift.end &&
+        otherShift.start < targetShift.end;
+      return !overlaps;
+    });
+  });
+}
+
 export function totalPayment(set: DocumentSet, settings: AppSettings): number {
   const total = getSetStaff(set, settings).reduce(
     (sum, person) => sum + staffPayment(set, settings, person.id).amount,
     0,
   );
-  return Math.round(total * 100) / 100;
+  return Math.round((total + exchangePaymentSummary(set, settings).amount) * 100) / 100;
 }
 
 export function totalHours(set: DocumentSet, settings: AppSettings): number {
@@ -302,7 +384,7 @@ export function totalHours(set: DocumentSet, settings: AppSettings): number {
     (sum, person) => sum + staffPayment(set, settings, person.id).hours,
     0,
   );
-  return Math.round(total * 100) / 100;
+  return Math.round((total + exchangePaymentSummary(set, settings).hours) * 100) / 100;
 }
 
 export interface Form1Row {
@@ -409,6 +491,8 @@ export interface Form4Row {
   timeOut: string;
   absent: boolean;
   note?: string;
+  /** แถวที่เพิ่มจากใบขอแลกเปลี่ยนเวร (ผู้ปฏิบัติงานแทน) */
+  isReplacement?: boolean;
 }
 
 export function getForm4Rows(set: DocumentSet, settings: AppSettings): Form4Row[] {
@@ -433,6 +517,7 @@ export function getForm4Rows(set: DocumentSet, settings: AppSettings): Form4Row[
     let dateSpan = 0;
     for (const list of byStaff.values()) dateSpan += list.length;
     let dateRowIndex = 0;
+    const dateStartIndex = rows.length;
     for (const staffId of set.staffIds) {
       const list = byStaff.get(staffId);
       if (!list?.length) continue;
@@ -461,6 +546,43 @@ export function getForm4Rows(set: DocumentSet, settings: AppSettings): Form4Row[
         dateRowIndex += 1;
       });
     }
+
+    const replacementExchanges = getSetExchanges(set)
+      .filter(
+        (exchange) => exchange.date === date && exchange.replacementStaffId,
+      )
+      .sort((a, b) => {
+        const startA = getShift(settings, a.shiftId)?.start ?? "";
+        const startB = getShift(settings, b.shiftId)?.start ?? "";
+        return startA.localeCompare(startB);
+      });
+
+    for (const exchange of replacementExchanges) {
+      const replacement = getPerson(settings, exchange.replacementStaffId as string);
+      const shift = getShift(settings, exchange.shiftId);
+      if (!replacement || !shift) continue;
+      const original = getPerson(settings, exchange.staffId);
+      rows.push({
+        key: `exchange|${exchange.id}`,
+        date,
+        showDate: false,
+        dateSpan: 0,
+        staff: replacement,
+        showStaff: true,
+        staffSpan: 1,
+        shift,
+        timeIn: shift.start,
+        timeOut: shift.end,
+        absent: false,
+        note: original ? `แทน ${personFullName(original)}` : "แทน",
+        isReplacement: true,
+      });
+    }
+
+    const dateRowCount = rows.length - dateStartIndex;
+    if (dateRowCount > 0) {
+      rows[dateStartIndex].dateSpan = dateRowCount;
+    }
   }
   return rows;
 }
@@ -473,10 +595,13 @@ export interface Form5StaffRow {
   amount: number;
   rate: number;
   cells: Record<string, Record<string, string>>;
+  /** แถวที่เพิ่มจากใบขอแลกเปลี่ยนเวร (ผู้ปฏิบัติงานแทน) */
+  isReplacement?: boolean;
+  note?: string;
 }
 
 export function getForm5Rows(set: DocumentSet, settings: AppSettings): Form5StaffRow[] {
-  return getForm3Rows(set, settings).map((row) => {
+  const rows: Form5StaffRow[] = getForm3Rows(set, settings).map((row) => {
     const summary = staffPayment(set, settings, row.staff.id);
     return {
       staff: row.staff,
@@ -488,6 +613,92 @@ export function getForm5Rows(set: DocumentSet, settings: AppSettings): Form5Staf
       cells: row.cells,
     };
   });
+
+  const rowByStaff = new Map(rows.map((row) => [row.staff.id, row]));
+  const countedDates = new Map(
+    rows.map((row) => [
+      row.staff.id,
+      new Set(workDatesForStaff(set, row.staff.id)),
+    ]),
+  );
+
+  const replacements = getSetExchanges(set)
+    .filter((exchange) => exchange.replacementStaffId)
+    .map((exchange) => {
+      const person = getPerson(settings, exchange.replacementStaffId as string);
+      const shift = getShift(settings, exchange.shiftId);
+      if (!person || !shift) return null;
+      const hours = shiftHours(shift.start, shift.end);
+      const rate = set.rateOverrides?.[person.id] ?? person.ratePerHour;
+      return {
+        exchange,
+        person,
+        shift,
+        hours,
+        amount: Math.round(hours * rate * 100) / 100,
+      };
+    })
+    .filter(
+      (item): item is {
+        exchange: ShiftExchange;
+        person: Person;
+        shift: Shift;
+        hours: number;
+        amount: number;
+      } => Boolean(item),
+    )
+    .sort((a, b) => {
+      if (a.exchange.date !== b.exchange.date) {
+        return a.exchange.date.localeCompare(b.exchange.date);
+      }
+      return a.shift.start.localeCompare(b.shift.start);
+    });
+
+  for (const { exchange, person, shift, hours, amount } of replacements) {
+    const existing = rowByStaff.get(person.id);
+    if (!existing) {
+      const cells = {
+        [exchange.date]: {
+          [shift.id]: formatTimeRangeDoc(shift.start, shift.end),
+        },
+      };
+      const row: Form5StaffRow = {
+        staff: person,
+        shifts: [shift],
+        totalDays: 1,
+        totalHours: Math.round(hours * 100) / 100,
+        amount,
+        rate: set.rateOverrides?.[person.id] ?? person.ratePerHour,
+        cells,
+        isReplacement: true,
+        note: "แทน",
+      };
+      rows.push(row);
+      rowByStaff.set(person.id, row);
+      continue;
+    }
+
+    if (existing.totalDays === 0) {
+      existing.shifts = [shift];
+    } else if (!existing.shifts.some((item) => item.id === shift.id)) {
+      existing.shifts.push(shift);
+    }
+    existing.cells[exchange.date] = {
+      ...(existing.cells[exchange.date] ?? {}),
+      [shift.id]: formatTimeRangeDoc(shift.start, shift.end),
+    };
+    const dates = countedDates.get(person.id) ?? new Set<string>();
+    if (!dates.has(exchange.date)) {
+      dates.add(exchange.date);
+      existing.totalDays += 1;
+    }
+    countedDates.set(person.id, dates);
+    existing.totalHours = Math.round((existing.totalHours + hours) * 100) / 100;
+    existing.amount = Math.round((existing.amount + amount) * 100) / 100;
+    existing.note = existing.note ? existing.note : "มีเวรแทน";
+  }
+
+  return rows;
 }
 
 export function formatTimeCell(shift: Shift): string {

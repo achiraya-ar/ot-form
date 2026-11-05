@@ -1,7 +1,12 @@
 import type { AppSettings, DocumentSet } from "../../types";
 import { saveFilesToFolder } from "./save";
 import { safeFileStem } from "./print";
-import { buildMemoDocx, buildOrderDocx } from "./word";
+import { getSetExchanges } from "../selectors";
+import {
+  buildExchangeFormsDocx,
+  buildMemoDocx,
+  buildOrderDocx,
+} from "./word";
 import {
   buildAttendanceXlsx,
   buildPaymentXlsx,
@@ -19,6 +24,10 @@ export async function exportAllFolder(
     buildAttendanceXlsx(set, settings),
     buildPaymentXlsx(set, settings),
   ]);
+
+  if (getSetExchanges(set).length > 0) {
+    files.push(await buildExchangeFormsDocx(set, settings));
+  }
 
   return saveFilesToFolder(files, safeFileStem(set.title));
 }

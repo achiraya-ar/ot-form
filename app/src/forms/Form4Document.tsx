@@ -110,7 +110,12 @@ export function Form4Document({
                   </tr>
                 ) : (
                   page.rows.map((row) => (
-                    <tr key={row.key} className={row.absent ? "is-absent" : ""}>
+                    <tr
+                      key={row.key}
+                      className={`${row.absent ? "is-absent" : ""} ${
+                        row.isReplacement ? "is-replacement" : ""
+                      }`}
+                    >
                       {row.showDate && (
                         <td rowSpan={row.dateSpan} className="date-cell">
                           {formatDateShortDoc(row.date)}
@@ -124,6 +129,7 @@ export function Form4Document({
                           <td rowSpan={row.staffSpan} className="name-cell">
                             {row.staff.prefix}
                             {row.staff.firstName} {row.staff.lastName}
+                            {row.isReplacement ? " (แทน)" : ""}
                           </td>
                         </>
                       )}

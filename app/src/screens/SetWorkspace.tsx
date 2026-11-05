@@ -210,8 +210,15 @@ export function SetWorkspace({
     completeAndAdvance(3, "บันทึกตารางเวรแล้ว");
   };
 
-  const saveAttendance = (attendance: Record<string, AttendanceRecord>) => {
-    updateSet(set.id, (current) => ({ ...current, attendance }));
+  const saveAttendance = (
+    attendance: Record<string, AttendanceRecord>,
+    exchanges: DocumentSet["shiftExchanges"],
+  ) => {
+    updateSet(set.id, (current) => ({
+      ...current,
+      attendance,
+      shiftExchanges: exchanges,
+    }));
     completeAndAdvance(4, "บันทึกใบลงเวลาแล้ว ตารางเวรจะแสดงเครื่องหมาย – สำหรับผู้ที่ไม่มา");
   };
 
@@ -482,8 +489,12 @@ export function SetWorkspace({
           settings={settings}
           onClose={() => setEditor(null)}
           onSave={saveAttendance}
-          onAutoSave={(attendance) => {
-            updateSet(set.id, (current) => ({ ...current, attendance }));
+          onAutoSave={(attendance, exchanges) => {
+            updateSet(set.id, (current) => ({
+              ...current,
+              attendance,
+              shiftExchanges: exchanges,
+            }));
           }}
         />
       )}

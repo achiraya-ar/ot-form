@@ -135,7 +135,7 @@ export function ExportModal({
             <FolderDown size={16} />
             {busy === "folder"
               ? "กำลังสร้างโฟลเดอร์…"
-              : "ส่งออกทั้ง 5 ไฟล์เป็นโฟลเดอร์"}
+              : "ส่งออกเอกสารทั้งชุด"}
           </Button>
         </>
       }
@@ -184,9 +184,19 @@ export function ExportModal({
         <div className="export-saved">
           <FolderDown size={17} />
           <div>
-            <strong>บันทึกครบ 5 ไฟล์แล้ว</strong>
+            <strong>บันทึกเอกสารทั้งชุดแล้ว</strong>
             <span>{savedFolder}</span>
           </div>
+        </div>
+      )}
+
+      {Array.isArray(set.shiftExchanges) && set.shiftExchanges.length > 0 && (
+        <div className="export-note">
+          <FileText size={16} />
+          <span>
+            มีใบแลกเปลี่ยนเวร {set.shiftExchanges.length} รายการ
+            ระบบจะรวมไฟล์ Word <strong>6 ใบขอแลกเปลี่ยนเวร</strong> ไว้ในโฟลเดอร์ด้วย
+          </span>
         </div>
       )}
 

@@ -83,7 +83,14 @@ function loadState(): AppState {
     const settings = mergeSettings(parsed.settings);
     return {
       settings,
-      sets: Array.isArray(parsed.sets) ? (parsed.sets as DocumentSet[]) : [],
+      sets: Array.isArray(parsed.sets)
+        ? (parsed.sets as DocumentSet[]).map((set) => ({
+            ...set,
+            shiftExchanges: Array.isArray(set.shiftExchanges)
+              ? set.shiftExchanges
+              : [],
+          }))
+        : [],
       session: parsed.session ?? null,
     };
   } catch {
@@ -326,7 +333,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({
       ...prev,
       settings,
-      sets: parsed.sets as DocumentSet[],
+      sets: (parsed.sets as DocumentSet[]).map((set) => ({
+        ...set,
+        shiftExchanges: Array.isArray(set.shiftExchanges)
+          ? set.shiftExchanges
+          : [],
+      })),
     }));
   };
 

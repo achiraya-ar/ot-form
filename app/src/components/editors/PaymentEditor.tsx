@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Check, Info, Wallet } from "lucide-react";
 import type { AppSettings, DocumentSet, SignatoryMap } from "../../types";
 import { Badge, Button, Modal } from "../ui";
-import { getSetStaff, staffPayment, totalPayment } from "../../lib/selectors";
+import { getForm5Rows, getSetStaff } from "../../lib/selectors";
 import { personFullName } from "../../data/defaults";
 import { formatBahtUi, formatMonthYearUi, formatNumberUi } from "../../lib/thai";
 import { SignatoryFields } from "./SignatoryFields";
@@ -34,13 +34,16 @@ export function PaymentEditor({
   );
 
   const rows = useMemo(() => {
-    return staff.map((person) => {
-      const base = staffPayment(set, settings, person.id);
-      const rate = rates[person.id] ?? person.ratePerHour;
-      const amount = Math.round(base.hours * rate * 100) / 100;
-      return { person, ...base, rate, amount };
+    return getForm5Rows(set, settings).map((row, index) => {
+      const rate = rates[row.staff.id] ?? row.staff.ratePerHour;
+      return {
+        ...row,
+        key: `${row.staff.id}-${row.isReplacement ? `replacement-${index}` : "normal"}`,
+        rate,
+        amount: Math.round(row.totalHours * rate * 100) / 100,
+      };
     });
-  }, [staff, set, settings, rates]);
+  }, [set, settings, rates]);
 
   const total = rows.reduce((sum, row) => sum + row.amount, 0);
 
@@ -99,28 +102,37 @@ export function PaymentEditor({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.person.id}>
+                <tr key={row.key} className={row.isReplacement ? "is-replacement" : ""}>
                   <td>
-                    <strong>{personFullName(row.person)}</strong>
+                    <strong>
+                      {personFullName(row.staff)}
+                      {row.isReplacement ? " (แทน)" : ""}
+                    </strong>
                   </td>
-                  <td>{row.person.position}</td>
+                  <td>{row.staff.position}</td>
                   <td>
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.25}
-                      className="input input--rate"
-                      value={rates[row.person.id] ?? row.person.ratePerHour}
-                      onChange={(event) =>
-                        setRates((prev) => ({
-                          ...prev,
-                          [row.person.id]: Number(event.target.value),
-                        }))
-                      }
-                    />
+                    {row.isReplacement ? (
+                      <span className="payment-rate-readonly">
+                        {formatNumberUi(row.rate, 2)}
+                      </span>
+                    ) : (
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.25}
+                        className="input input--rate"
+                        value={rates[row.staff.id] ?? row.staff.ratePerHour}
+                        onChange={(event) =>
+                          setRates((prev) => ({
+                            ...prev,
+                            [row.staff.id]: Number(event.target.value),
+                          }))
+                        }
+                      />
+                    )}
                   </td>
-                  <td className="center">{formatNumberUi(row.days)}</td>
-                  <td className="center">{formatNumberUi(row.hours, 2)}</td>
+                  <td className="center">{formatNumberUi(row.totalDays)}</td>
+                  <td className="center">{formatNumberUi(row.totalHours, 2)}</td>
                   <td className="right amount-strong">
                     {formatNumberUi(row.amount, 2)}
                   </td>

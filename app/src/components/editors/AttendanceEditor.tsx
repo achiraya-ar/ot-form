@@ -1,14 +1,17 @@
-import { useMemo, useState } from "react";
-import { Check, ChevronDown, Clock, Eraser, UserX } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { ArrowLeftRight, Check, ChevronDown, Clock, Eraser } from "lucide-react";
 import type {
   AppSettings,
   Assignment,
   AttendanceRecord,
   DocumentSet,
+  ShiftExchange,
 } from "../../types";
 import { Button, Modal, TimeInput, useToast } from "../ui";
+import { ShiftExchangePanel } from "./ShiftExchangePanel";
+import { ExchangeRequestModal } from "./ExchangeRequestModal";
 import { assignmentKey, personFullName } from "../../data/defaults";
-import { getSetStaff, getShift } from "../../lib/selectors";
+import { exchangePaymentSummary, getSetStaff, getShift } from "../../lib/selectors";
 import {
   formatBahtUi,
   formatDateShortUi,
@@ -59,16 +62,36 @@ export function AttendanceEditor({
   set: DocumentSet;
   settings: AppSettings;
   onClose: () => void;
-  onSave: (attendance: Record<string, AttendanceRecord>) => void;
-  onAutoSave?: (attendance: Record<string, AttendanceRecord>) => void;
+  onSave: (
+    attendance: Record<string, AttendanceRecord>,
+    exchanges: ShiftExchange[],
+  ) => void;
+  onAutoSave?: (
+    attendance: Record<string, AttendanceRecord>,
+    exchanges: ShiftExchange[],
+  ) => void;
 }) {
   const notify = useToast();
   const staff = getSetStaff(set, settings);
   const [records, setRecords] = useState<Record<string, AttendanceRecord>>(() =>
     buildRecords(set, settings),
   );
+  const [exchanges, setExchanges] = useState<ShiftExchange[]>(() =>
+    Array.isArray(set.shiftExchanges) ? set.shiftExchanges : [],
+  );
+  const [tab, setTab] = useState<"attendance" | "exchanges">("attendance");
   const [onlyExceptions, setOnlyExceptions] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [exchangePrefill, setExchangePrefill] = useState<{
+    assignment: Assignment;
+    nonce: number;
+  } | null>(null);
+  const [printExchange, setPrintExchange] = useState<ShiftExchange | null>(null);
+  const handlePrefillHandled = useCallback(() => setExchangePrefill(null), []);
+  const exchangedKeys = useMemo(
+    () => new Set(exchanges.map((exchange) => assignmentKey(exchange))),
+    [exchanges],
+  );
 
   const dateGroups = useMemo<DateGroup[]>(() => {
     const map = new Map<string, Map<string, Assignment[]>>();
@@ -113,8 +136,14 @@ export function AttendanceEditor({
       else entry.present += 1;
       map.set(assignment.date, entry);
     }
+    for (const exchange of exchanges) {
+      if (!exchange.replacementStaffId) continue;
+      const entry = map.get(exchange.date) ?? { present: 0, absent: 0 };
+      entry.present += 1;
+      map.set(exchange.date, entry);
+    }
     return map;
-  }, [set.assignments, records]);
+  }, [set.assignments, records, exchanges]);
 
   const displayDates = onlyExceptions
     ? dateGroups.filter((group) => (dateStats.get(group.date)?.absent ?? 0) > 0)
@@ -122,6 +151,11 @@ export function AttendanceEditor({
 
   const [expandedDate, setExpandedDate] = useState<string | null>(
     dateGroups[0]?.date ?? null,
+  );
+
+  const exchangeSummary = useMemo(
+    () => exchangePaymentSummary({ ...set, shiftExchanges: exchanges }, settings),
+    [set, settings, exchanges],
   );
 
   const summary = useMemo(() => {
@@ -147,13 +181,16 @@ export function AttendanceEditor({
       hours += hour;
       amount += hour * (set.rateOverrides?.[assignment.staffId] ?? person?.ratePerHour ?? 0);
     }
+    present += exchanges.filter((exchange) => exchange.replacementStaffId).length;
+    hours += exchangeSummary.hours;
+    amount += exchangeSummary.amount;
     return {
       present,
       absent,
       hours: Math.round(hours * 100) / 100,
       amount: Math.round(amount * 100) / 100,
     };
-  }, [records, set.assignments, set.rateOverrides, settings, staff]);
+  }, [records, set.assignments, set.rateOverrides, settings, staff, exchanges, exchangeSummary]);
 
   const update = (assignment: Assignment, patch: Partial<AttendanceRecord>) => {
     const key = assignmentKey(assignment);
@@ -164,6 +201,7 @@ export function AttendanceEditor({
   };
 
   const setStatus = (assignment: Assignment, status: "present" | "absent") => {
+    if (exchangedKeys.has(assignmentKey(assignment))) return;
     const shift = getShift(settings, assignment.shiftId);
     const current = records[assignmentKey(assignment)];
     update(assignment, {
@@ -172,6 +210,10 @@ export function AttendanceEditor({
         ? { timeIn: shift?.start, timeOut: shift?.end }
         : {}),
     });
+    if (status === "absent") {
+      setExchangePrefill({ assignment, nonce: Date.now() });
+      setTab("exchanges");
+    }
   };
 
   const activeAttendance = () => {
@@ -184,7 +226,7 @@ export function AttendanceEditor({
   };
 
   const persistDraft = () => {
-    onAutoSave?.(activeAttendance());
+    onAutoSave?.(activeAttendance(), exchanges);
   };
 
   const toggleDate = (date: string) => {
@@ -197,11 +239,97 @@ export function AttendanceEditor({
     onClose();
   };
 
+  const handleModalClose = () => {
+    if (printExchange) {
+      setPrintExchange(null);
+      return;
+    }
+    closeEditor();
+  };
+
+  const saveExchange = (
+    exchange: ShiftExchange,
+    previous?: ShiftExchange,
+  ) => {
+    const nextExchanges = previous
+      ? exchanges.map((item) => (item.id === exchange.id ? exchange : item))
+      : [...exchanges, exchange];
+    setExchanges(nextExchanges);
+
+    setRecords((prev) => {
+      const next = { ...prev };
+      if (
+        previous &&
+        assignmentKey(previous) !== assignmentKey(exchange) &&
+        !nextExchanges.some(
+          (item) => assignmentKey(item) === assignmentKey(previous),
+        )
+      ) {
+        const oldKey = assignmentKey(previous);
+        const oldRecord = next[oldKey];
+        const oldShift = getShift(settings, previous.shiftId);
+        if (oldRecord) {
+          next[oldKey] = {
+            ...oldRecord,
+            status: "present",
+            timeIn: oldRecord.timeIn ?? oldShift?.start,
+            timeOut: oldRecord.timeOut ?? oldShift?.end,
+          };
+        }
+      }
+
+      const key = assignmentKey(exchange);
+      const shift = getShift(settings, exchange.shiftId);
+      next[key] = {
+        ...(next[key] ?? {
+          date: exchange.date,
+          staffId: exchange.staffId,
+          shiftId: exchange.shiftId,
+          timeIn: shift?.start,
+          timeOut: shift?.end,
+        }),
+        status: "absent",
+      };
+      return next;
+    });
+
+    notify("บันทึกใบแลกเปลี่ยนเวรแล้ว");
+    setTab("exchanges");
+  };
+
+  const deleteExchange = (exchange: ShiftExchange) => {
+    const nextExchanges = exchanges.filter((item) => item.id !== exchange.id);
+    setExchanges(nextExchanges);
+    if (
+      !nextExchanges.some(
+        (item) => assignmentKey(item) === assignmentKey(exchange),
+      )
+    ) {
+      setRecords((prev) => {
+        const key = assignmentKey(exchange);
+        const record = prev[key];
+        if (!record) return prev;
+        const shift = getShift(settings, exchange.shiftId);
+        return {
+          ...prev,
+          [key]: {
+            ...record,
+            status: "present",
+            timeIn: record.timeIn ?? shift?.start,
+            timeOut: record.timeOut ?? shift?.end,
+          },
+        };
+      });
+    }
+    notify("ลบใบแลกเปลี่ยนเวรแล้ว", "info");
+  };
+
   const markAllPresent = () => {
     setRecords((prev) => {
       const next = { ...prev };
       for (const assignment of set.assignments) {
         const key = assignmentKey(assignment);
+        if (exchangedKeys.has(key)) continue;
         const shift = getShift(settings, assignment.shiftId);
         next[key] = {
           ...next[key],
@@ -247,74 +375,98 @@ export function AttendanceEditor({
   return (
     <Modal
       open
-      onClose={closeEditor}
+      onClose={handleModalClose}
       title="บันทึกใบรายชื่อเข้างาน"
       subtitle={`${formatMonthYearUi(set.month, set.year)} · ${formatNumberUi(
         set.assignments.length,
-      )} เวร · บันทึกอัตโนมัติเมื่อสลับวัน`}
+      )} เวร`}
       size="xl"
       className="attendance-modal"
       footer={
-        <div className="schedule-footer">
-          <div className="schedule-footer__summary">
-            <span>
-              มา <strong>{formatNumberUi(summary.present)}</strong>
-            </span>
-            <span>
-              ไม่มา <strong className="text-danger">{formatNumberUi(summary.absent)}</strong>
-            </span>
-            <span>
-              <strong>{formatNumberUi(summary.hours, 2)}</strong> ชั่วโมง
-            </span>
-            <span>
-              ค่าตอบแทน <strong>฿ {formatBahtUi(summary.amount)}</strong>
-            </span>
-          </div>
-          <div className="schedule-footer__actions">
-            <Button variant="secondary" onClick={closeEditor}>
-              ปิด
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => onSave(activeAttendance())}
-            >
-              <Check size={16} /> บันทึกใบลงเวลา
-            </Button>
-          </div>
-        </div>
+        <>
+          <Button variant="secondary" onClick={closeEditor}>
+            ปิด
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => onSave(activeAttendance(), exchanges)}
+          >
+            <Check size={16} /> บันทึกใบลงเวลา
+          </Button>
+        </>
       }
     >
       <div className="attendance2">
-        <div className="attendance2__toolbar">
-          <div className="attendance2__hint">
-            <UserX size={15} />
-            <span>
-              คลิกชิป เช้า/เย็น เพื่อสลับ “มา/ไม่มา” · ถ้าไม่มา ระบบจะตัดเวลานั้นออก
-            </span>
-          </div>
-          <div className="attendance2__actions">
-            <Button size="sm" variant="soft" onClick={markAllPresent}>
-              <Check size={14} /> มาทั้งหมด
-            </Button>
-            <label className="daily-check">
-              <input
-                type="checkbox"
-                checked={onlyExceptions}
-                onChange={(event) => toggleExceptions(event.target.checked)}
-              />
-              <span>เฉพาะวันที่มีการไม่มา</span>
-            </label>
-            <details className="schedule-menu">
-              <summary>ตัวเลือก</summary>
-              <div>
-                <button type="button" onClick={resetTimes}>
-                  <Eraser size={13} /> คืนค่าเวลาเริ่มต้น
-                </button>
-              </div>
-            </details>
-          </div>
+        <div className="attendance-tabs" role="tablist" aria-label="ส่วนของใบลงเวลา">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "attendance"}
+            className={tab === "attendance" ? "is-active" : ""}
+            onClick={() => setTab("attendance")}
+          >
+            <Clock size={15} /> บัญชีลงเวลา
+            <span>{formatNumberUi(set.assignments.length)}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "exchanges"}
+            className={tab === "exchanges" ? "is-active" : ""}
+            onClick={() => setTab("exchanges")}
+          >
+            <ArrowLeftRight size={15} /> ใบแลกเปลี่ยนเวร
+            <span>{formatNumberUi(exchanges.length)}</span>
+          </button>
         </div>
 
+        <div className="attendance-overview">
+          <div className="attendance-summary">
+            <div className="attendance-metric is-present">
+              <span>มา</span>
+              <strong>{formatNumberUi(summary.present)}</strong>
+            </div>
+            <div className="attendance-metric is-absent">
+              <span>ไม่มา</span>
+              <strong>{formatNumberUi(summary.absent)}</strong>
+            </div>
+            <div className="attendance-metric">
+              <span>ชั่วโมง</span>
+              <strong>{formatNumberUi(summary.hours, 2)}</strong>
+            </div>
+            <div className="attendance-metric is-money">
+              <span>ค่าตอบแทน</span>
+              <strong>฿ {formatBahtUi(summary.amount)}</strong>
+            </div>
+          </div>
+
+          {tab === "attendance" && (
+            <div className="attendance-actions">
+              <Button size="sm" variant="soft" onClick={markAllPresent}>
+                <Check size={14} /> มาทั้งหมด
+              </Button>
+              <label className="attendance-filter-toggle">
+                <input
+                  type="checkbox"
+                  checked={onlyExceptions}
+                  onChange={(event) => toggleExceptions(event.target.checked)}
+                />
+                <span>เฉพาะไม่มา</span>
+              </label>
+              <details className="schedule-menu">
+                <summary>ตัวเลือก</summary>
+                <div>
+                  <button type="button" onClick={resetTimes}>
+                    <Eraser size={13} /> คืนค่าเวลาเริ่มต้น
+                  </button>
+                </div>
+              </details>
+            </div>
+          )}
+        </div>
+
+        {tab === "attendance" ? (
+          <>
         {dateGroups.length === 0 ? (
           <div className="attendance2__empty">ยังไม่มีเวรในชุดเอกสารนี้</div>
         ) : displayDates.length === 0 ? (
@@ -326,6 +478,10 @@ export function AttendanceEditor({
           <div className="attendance2__list">
             {displayDates.map((group) => {
               const stats = dateStats.get(group.date) ?? { present: 0, absent: 0 };
+              const replacements = exchanges.filter(
+                (exchange) =>
+                  exchange.date === group.date && exchange.replacementStaffId,
+              ).length;
               const expanded = expandedDate === group.date;
               return (
                 <section
@@ -347,6 +503,11 @@ export function AttendanceEditor({
                       <span className={stats.absent > 0 ? "is-absent" : ""}>
                         ไม่มา {formatNumberUi(stats.absent)}
                       </span>
+                      {replacements > 0 && (
+                        <span className="is-replacement">
+                          แทน {formatNumberUi(replacements)}
+                        </span>
+                      )}
                     </span>
                     <ChevronDown size={17} className="att-date-card__chevron" />
                   </button>
@@ -372,6 +533,9 @@ export function AttendanceEditor({
                                   const shift = getShift(settings, assignment.shiftId);
                                   const record = records[assignmentKey(assignment)];
                                   const absent = record?.status === "absent";
+                                  const exchanged = exchangedKeys.has(
+                                    assignmentKey(assignment),
+                                  );
                                   const timeText = shift
                                     ? `${formatTimeUi(
                                         record?.timeIn ?? shift.start,
@@ -383,14 +547,19 @@ export function AttendanceEditor({
                                       type="button"
                                       className={`att-chip ${
                                         absent ? "is-absent" : "is-present"
-                                      }`}
+                                      } ${exchanged ? "is-exchanged" : ""}`}
                                       onClick={() =>
                                         setStatus(assignment, absent ? "present" : "absent")
                                       }
-                                      title={`${shift?.name ?? "เวร"} ${timeText} — คลิกเพื่อสลับสถานะ`}
+                                      disabled={exchanged}
+                                      title={
+                                        exchanged
+                                          ? "มีใบแลกเปลี่ยนเวร — จัดการที่แท็บใบแลกเปลี่ยนเวร"
+                                          : `${shift?.name ?? "เวร"} ${timeText} — คลิกเพื่อสลับสถานะ`
+                                      }
                                     >
                                       <span className="att-chip__status">
-                                        {absent ? "ไม่มา" : "มา"}
+                                        {exchanged ? "แลกเวร" : absent ? "ไม่มา" : "มา"}
                                       </span>
                                       <span className="att-chip__text">
                                         <strong>{shift?.name ?? "เวร"}</strong>
@@ -477,7 +646,30 @@ export function AttendanceEditor({
             })}
           </div>
         )}
+          </>
+        ) : (
+          <ShiftExchangePanel
+            set={set}
+            settings={settings}
+            exchanges={exchanges}
+            attendance={records}
+            prefill={exchangePrefill}
+            onPrefillHandled={handlePrefillHandled}
+            onSave={saveExchange}
+            onDelete={deleteExchange}
+            onPrint={setPrintExchange}
+          />
+        )}
       </div>
+
+      {printExchange && (
+        <ExchangeRequestModal
+          set={set}
+          settings={settings}
+          exchange={printExchange}
+          onClose={() => setPrintExchange(null)}
+        />
+      )}
     </Modal>
   );
 }

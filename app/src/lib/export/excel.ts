@@ -258,7 +258,7 @@ export async function buildScheduleXlsx(set: DocumentSet, settings: AppSettings)
 
   return buildWorkbook(
     workbook,
-    "ตารางการปฏิบัติงานนอกเวลาราชการ.xlsx",
+    "3 ตารางการปฏิบัติงานนอกเวลาราชการ.xlsx",
   );
 }
 
@@ -337,7 +337,9 @@ export async function buildAttendanceXlsx(
           ws,
           rowIndex,
           3,
-          `${row.staff.prefix}${row.staff.firstName} ${row.staff.lastName}`,
+          `${row.staff.prefix}${row.staff.firstName} ${row.staff.lastName}${
+            row.isReplacement ? " (แทน)" : ""
+          }`,
           { size: 16 },
         );
       }
@@ -443,7 +445,7 @@ export async function buildAttendanceXlsx(
 
   return buildWorkbook(
     workbook,
-    "บัญชีลงเวลาปฏิบัติงานนอกเวลาราชการ.xlsx",
+    "4 บัญชีลงเวลาปฏิบัติงานนอกเวลาราชการ.xlsx",
   );
 }
 
@@ -576,7 +578,9 @@ export async function buildPaymentXlsx(set: DocumentSet, settings: AppSettings) 
       ws,
       rowIndex,
       2,
-      `${row.staff.prefix}${row.staff.firstName} ${row.staff.lastName}`,
+      `${row.staff.prefix}${row.staff.firstName} ${row.staff.lastName}${
+        row.isReplacement ? " (แทน)" : ""
+      }`,
       { size: 12 },
     );
     applyCell(ws, rowIndex, 3, row.staff.position, { size: 12 });
@@ -595,7 +599,7 @@ export async function buildPaymentXlsx(set: DocumentSet, settings: AppSettings) 
     // The payment date is filled in by the finance officer on paper.
     applyCell(ws, rowIndex, dateCol, "", { size: 12, align: "center" });
     applyCell(ws, rowIndex, signCol, "", { size: 12 });
-    applyCell(ws, rowIndex, noteCol, "", { size: 12 });
+    applyCell(ws, rowIndex, noteCol, row.note ?? "", { size: 12 });
 
     for (let shiftIndex = 0; shiftIndex < rowSpan; shiftIndex += 1) {
       const shift = row.shifts[shiftIndex];
@@ -703,7 +707,7 @@ export async function buildPaymentXlsx(set: DocumentSet, settings: AppSettings) 
 
   return buildWorkbook(
     workbook,
-    "หลักฐานการจ่ายเงินค่าตอบแทน.xlsx",
+    "5 หลักฐานการจ่ายเงินค่าตอบแทน.xlsx",
   );
 }
 

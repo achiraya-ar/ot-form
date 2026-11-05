@@ -24,15 +24,22 @@ import { personFullName } from "../../data/defaults";
 import {
   getDocumentShifts,
   getForm1Rows,
+  getPerson,
+  getSetExchanges,
+  getShift,
   memoBodyText,
   orderBodyOf,
   orderClosingOf,
 } from "../selectors";
 import {
   formatDateDoc,
+  formatDateDocFull,
   formatDateDocOrderIssued,
   formatOrderNumber,
+  formatTimeDoc,
   formatTimeHeaderDoc,
+  parseIsoDate,
+  THAI_MONTHS,
   toThaiDigits,
 } from "../thai";
 
@@ -376,7 +383,7 @@ export async function buildOrderDocx(set: DocumentSet, settings: AppSettings) {
   const blob = await Packer.toBlob(doc);
   return {
     blob,
-    filename: "คำสั่งแต่งตั้งเจ้าหน้าที่ปฏิบัติงานนอกเวลา.docx",
+    filename: "1 คำสั่งแต่งตั้งเจ้าหน้าที่ปฏิบัติงานนอกเวลา.docx",
   };
 }
 
@@ -558,11 +565,220 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
   const blob = await Packer.toBlob(doc);
   return {
     blob,
-    filename: "บันทึกขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ.docx",
+    filename: "2 บันทึกขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ.docx",
   };
 }
 
 export async function exportMemoDocx(set: DocumentSet, settings: AppSettings) {
   const { blob, filename } = await buildMemoDocx(set, settings);
   return saveBlob(blob, filename);
+}
+
+
+export async function buildExchangeFormsDocx(
+  set: DocumentSet,
+  settings: AppSettings,
+) {
+  const exchanges = getSetExchanges(set);
+  const groupHead = set.signatories.groupHead;
+  const children: (Paragraph | Table)[] = [];
+
+  const dateParts = (iso: string) => {
+    const date = parseIsoDate(iso);
+    return {
+      day: toThaiDigits(date.getDate()),
+      month: THAI_MONTHS[date.getMonth()],
+      year: toThaiDigits(date.getFullYear() + 543),
+    };
+  };
+
+  exchanges.forEach((exchange, index) => {
+    const original = getPerson(settings, exchange.staffId);
+    const replacement = exchange.replacementStaffId
+      ? getPerson(settings, exchange.replacementStaffId)
+      : undefined;
+    const shift = getShift(settings, exchange.shiftId);
+    const originalName = original ? personFullName(original) : "-";
+    const originalPosition = original
+      ? original.position.split("\n").join(" ")
+      : "-";
+    const replacementName = replacement ? personFullName(replacement) : "-";
+    const replacementPosition = replacement
+      ? replacement.position.split("\n").join(" ")
+      : "-";
+    const requestDate = dateParts(exchange.requestDate);
+    const exchangeDate = dateParts(exchange.date);
+
+    if (index > 0) {
+      children.push(new Paragraph({ pageBreakBefore: true, children: [] }));
+    }
+
+    children.push(
+      paragraph("ใบขอแลกเปลี่ยนเวรปฏิบัติงาน", {
+        alignment: AlignmentType.CENTER,
+        size: 40,
+        bold: true,
+      }),
+      paragraph(set.org.hospitalName, {
+        alignment: AlignmentType.RIGHT,
+        size: BODY_SIZE,
+        spacingBefore: 60,
+        rightIndent: 12,
+      }),
+      paragraph(
+        `วันที่ ${requestDate.day} เดือน ${requestDate.month} พ.ศ. ${requestDate.year}`,
+        {
+          alignment: AlignmentType.RIGHT,
+          size: BODY_SIZE,
+          spacingBefore: 20,
+          rightIndent: 12,
+        },
+      ),
+      new Paragraph({ spacing: { after: 160 }, children: [] }),
+      paragraph("เรื่อง   ขอแลกเปลี่ยนเวรปฏิบัติงาน", {
+        size: BODY_SIZE,
+      }),
+      paragraph(`เรียน   ผู้อำนวยการ${set.org.hospitalName}`, {
+        size: BODY_SIZE,
+        spacingBefore: 40,
+      }),
+      new Paragraph({ spacing: { after: 80 }, children: [] }),
+      paragraph(`ข้าพเจ้า ${originalName} ตำแหน่ง ${originalPosition}`, {
+        indentFirstLineMm: 12,
+        size: BODY_SIZE,
+      }),
+      paragraph(
+        `ขอแลกเปลี่ยนเวรจาก วันที่ ${exchangeDate.day} เดือน ${exchangeDate.month} พ.ศ. ${exchangeDate.year}${
+          shift
+            ? ` เวลา ${formatTimeDoc(shift.start)} น. ถึง ${formatTimeDoc(
+                shift.end,
+              )} น.`
+            : ""
+        }`,
+        { size: BODY_SIZE, spacingBefore: 20 },
+      ),
+      paragraph(
+        `เนื่องจาก ${
+          exchange.reason.trim() || "................................................"
+        }`,
+        { size: BODY_SIZE, spacingBefore: 20 },
+      ),
+      paragraph(
+        `โดยมอบให้ ${replacementName} ตำแหน่ง ${replacementPosition}`,
+        { size: BODY_SIZE, spacingBefore: 20 },
+      ),
+      paragraph("ปฏิบัติงานแทนในเวรตามวันและเวลาดังกล่าว", {
+        size: BODY_SIZE,
+        spacingBefore: 20,
+      }),
+      paragraph("จึงเรียนมาเพื่อทราบ และพิจารณาอนุมัติ", {
+        alignment: AlignmentType.CENTER,
+        size: BODY_SIZE,
+        spacingBefore: 120,
+      }),
+      new Paragraph({ spacing: { after: 220 }, children: [] }),
+      paragraph("ลงชื่อ....................................................ผู้ขอแลกเปลี่ยน", {
+        alignment: AlignmentType.RIGHT,
+        size: BODY_SIZE,
+      }),
+      paragraph(`(${originalName})`, {
+        alignment: AlignmentType.CENTER,
+        size: BODY_SIZE,
+        indentLeftMm: 48,
+        spacingBefore: 20,
+      }),
+      paragraph(`ตำแหน่ง ${originalPosition}`, {
+        alignment: AlignmentType.LEFT,
+        size: BODY_SIZE,
+        indentLeftMm: 48,
+        spacingBefore: 20,
+      }),
+      new Paragraph({ spacing: { after: 180 }, children: [] }),
+      paragraph("ลงชื่อ....................................................ผู้ปฏิบัติงานแทน", {
+        alignment: AlignmentType.RIGHT,
+        size: BODY_SIZE,
+      }),
+      paragraph(`(${replacementName})`, {
+        alignment: AlignmentType.CENTER,
+        size: BODY_SIZE,
+        indentLeftMm: 48,
+        spacingBefore: 20,
+      }),
+      paragraph(`ตำแหน่ง ${replacementPosition}`, {
+        alignment: AlignmentType.LEFT,
+        size: BODY_SIZE,
+        indentLeftMm: 48,
+        spacingBefore: 20,
+      }),
+      new Paragraph({ spacing: { after: 260 }, children: [] }),
+      paragraph("อนุญาต", {
+        alignment: AlignmentType.CENTER,
+        size: BODY_SIZE,
+        spacingBefore: 80,
+      }),
+      new Paragraph({ spacing: { after: 160 }, children: [] }),
+      paragraph("ลงชื่อ..............................................................", {
+        alignment: AlignmentType.RIGHT,
+        size: BODY_SIZE,
+      }),
+      paragraph(`(${groupHead.name})`, {
+        alignment: AlignmentType.CENTER,
+        size: BODY_SIZE,
+        indentLeftMm: 48,
+        spacingBefore: 20,
+      }),
+      ...groupHead.position
+        .split("\n")
+        .filter(Boolean)
+        .map((line) =>
+          paragraph(line, {
+            alignment: AlignmentType.LEFT,
+            size: BODY_SIZE,
+            indentLeftMm: 48,
+            spacingBefore: 10,
+          }),
+        ),
+      paragraph("วันที่..........เดือน.............................พ.ศ...........", {
+        alignment: AlignmentType.LEFT,
+        size: BODY_SIZE,
+        indentLeftMm: 48,
+        spacingBefore: 20,
+      }),
+    );
+  });
+
+  const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: { font: FONT, size: BODY_SIZE },
+        },
+      },
+    },
+    sections: [
+      {
+        properties: {
+          page: {
+            size: {
+              width: convertMillimetersToTwip(210),
+              height: convertMillimetersToTwip(297),
+            },
+            margin: {
+              top: convertMillimetersToTwip(12),
+              right: convertMillimetersToTwip(20),
+              bottom: convertMillimetersToTwip(10),
+              left: convertMillimetersToTwip(20),
+            },
+          },
+        },
+        children,
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  return {
+    blob,
+    filename: "6 ใบขอแลกเปลี่ยนเวร.docx",
+  };
 }

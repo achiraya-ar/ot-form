@@ -155,6 +155,7 @@ export function blankSet(settings: AppSettings): DocumentSet {
     staffIds: settings.staff.filter((s) => s.active).map((s) => s.id),
     assignments: [],
     attendance: {},
+    shiftExchanges: [],
     completedSteps: [],
     status: "draft",
     controllerId: settings.staff[0]?.id ?? "",

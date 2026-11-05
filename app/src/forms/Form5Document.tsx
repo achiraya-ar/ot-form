@@ -42,8 +42,17 @@ export function Form5Document({
   const pages = paginateRows(rows, 6);
   const spanOf = (items: typeof rows) =>
     items.reduce((sum, row) => sum + Math.max(1, row.shifts.length), 0);
-  if (rows.length > 0 && spanOf(pages[pages.length - 1]) > 4) {
-    pages.push([rows[rows.length - 1]]);
+  // Keep each person's full row on one page. If the final data page is too
+  // full for the signature block, move the last whole row to a continuation
+  // page instead of duplicating it on both pages.
+  const lastDataPage = pages[pages.length - 1];
+  if (
+    rows.length > 1 &&
+    lastDataPage.length > 1 &&
+    spanOf(lastDataPage) > 4
+  ) {
+    const moved = lastDataPage.pop();
+    if (moved) pages.push([moved]);
   }
   const days = getDaysInMonth(set.year, set.month);
   const monthLabel = formatMonthYearDoc(set.month, set.year);
@@ -136,6 +145,7 @@ export function Form5Document({
                               <td rowSpan={rowSpan} className="name-cell">
                                 {row.staff.prefix}
                                 {row.staff.firstName} {row.staff.lastName}
+                                {row.isReplacement ? " (แทน)" : ""}
                               </td>
                               <td rowSpan={rowSpan} className="position-cell">
                                 {row.staff.position}
@@ -170,7 +180,7 @@ export function Form5Document({
                               </td>
                               <td rowSpan={rowSpan} className="center date-received-cell" />
                               <td rowSpan={rowSpan} />
-                              <td rowSpan={rowSpan} />
+                              <td rowSpan={rowSpan}>{row.note ?? ""}</td>
                             </>
                           )}
                         </tr>

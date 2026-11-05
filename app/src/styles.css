@@ -12728,3 +12728,857 @@ body.workbench-open .toast-stack {
   color: #3f7a52;
   overflow-wrap: anywhere;
 }
+
+/* ── Attendance tabs and shift exchanges ───────────────────────────── */
+
+.attendance-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 10px;
+  border: 1px solid #e3eff8;
+  border-radius: 12px;
+  background: #f1f8fd;
+}
+
+.attendance-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #5c7d9c;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.attendance-tabs button:hover {
+  background: #e6f4fd;
+  color: #0c4a6e;
+}
+
+.attendance-tabs button.is-active {
+  background: #ffffff;
+  color: var(--toy-navy);
+  box-shadow: 0 2px 8px -4px rgba(30, 58, 138, 0.25);
+}
+
+.attendance-tabs button span {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.attendance-tabs button.is-active span {
+  background: var(--toy-navy);
+  color: #ffffff;
+}
+
+.exchange-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.exchange-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 2px 0;
+}
+
+.exchange-panel__head .eyebrow {
+  color: #0284c7;
+  font-size: 9px;
+}
+
+.exchange-panel__head h3 {
+  margin-top: 2px;
+  font-family: "Mali", "Sarabun", var(--font-sans);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--toy-navy);
+}
+
+.exchange-panel__head p {
+  margin-top: 3px;
+  max-width: 580px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--slate);
+}
+
+.exchange-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #bae6fd;
+  border-radius: 14px;
+  background: #f8fcff;
+}
+
+.exchange-form__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.exchange-form__head strong {
+  display: block;
+  font-size: 12px;
+  color: var(--toy-navy);
+}
+
+.exchange-form__head small {
+  display: block;
+  margin-top: 2px;
+  font-size: 9.5px;
+  color: #8aa3ba;
+}
+
+.exchange-form__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
+}
+
+.exchange-form__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #eef8ff;
+  color: #5c7d9c;
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+
+.exchange-form__note svg {
+  flex-shrink: 0;
+  color: #0284c7;
+}
+
+.exchange-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.exchange-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e3eff8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #7fa6c4;
+  transition:
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.exchange-icon-btn:hover {
+  border-color: #bae6fd;
+  background: #f1f9ff;
+  color: var(--toy-navy);
+}
+
+.exchange-icon-btn.is-danger {
+  color: #b91c1c;
+}
+
+.exchange-icon-btn.is-danger:hover {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.exchange-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px dashed #d7e8f5;
+  border-radius: 13px;
+  background: #fbfdff;
+}
+
+.exchange-empty__icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.exchange-empty strong {
+  font-size: 11.5px;
+  color: #33415c;
+}
+
+.exchange-empty p {
+  margin-top: 2px;
+  font-size: 10px;
+  color: #8aa3ba;
+}
+
+.exchange-list {
+  display: grid;
+  gap: 7px;
+}
+
+.exchange-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e7f1fa;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.exchange-card.is-editing {
+  border-color: #7dd3fc;
+  background: #f8fcff;
+}
+
+.exchange-card__date {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 96px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: #eef8ff;
+  color: #0369a1;
+}
+
+.exchange-card__date svg {
+  margin-bottom: 1px;
+  color: #7fa6c4;
+}
+
+.exchange-card__date strong {
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.exchange-card__date span {
+  font-size: 8.5px;
+  color: #8aa3ba;
+}
+
+.exchange-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.exchange-card__route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #33415c;
+}
+
+.exchange-card__route span:first-child {
+  font-weight: 600;
+}
+
+.exchange-card__route .is-replacement {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.exchange-card__route .is-empty {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.exchange-card__main p {
+  margin-top: 2px;
+  font-size: 9.5px;
+  color: #8aa3ba;
+}
+
+.exchange-card__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.exchange-card__confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 9.5px;
+  color: #b91c1c;
+}
+
+.exchange-card__confirm button {
+  padding: 3px 7px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #b91c1c;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.exchange-card__confirm button.is-danger {
+  border-color: #e11d2e;
+  background: #e11d2e;
+  color: #ffffff;
+}
+
+@media (max-width: 760px) {
+  .exchange-panel__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .exchange-panel__head .btn {
+    align-self: flex-start;
+  }
+
+  .exchange-form__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .exchange-card {
+    flex-wrap: wrap;
+  }
+
+  .exchange-card__main {
+    flex-basis: calc(100% - 112px);
+  }
+
+  .exchange-card__actions {
+    margin-left: auto;
+  }
+
+  .exchange-card__confirm {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+}
+
+
+.att-date-card__summary .is-replacement {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.payment-table tr.is-replacement {
+  background: #f8fcff;
+}
+
+.payment-rate-readonly {
+  display: inline-block;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: #eef8ff;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.att-chip.is-exchanged {
+  border-style: dashed;
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  cursor: not-allowed;
+}
+
+.att-chip.is-exchanged .att-chip__status {
+  color: #b45309;
+}
+
+.att-chip.is-exchanged:disabled {
+  opacity: 1;
+}
+
+/* ── Exchange request document ─────────────────────────────────────── */
+
+.doc--exchange .exchange-doc__hospital {
+  margin-top: -1mm;
+  text-align: center;
+  font-size: 15pt;
+}
+
+.exchange-doc__meta {
+  margin-top: 9mm;
+}
+
+.doc--exchange .memo-body {
+  margin-top: 4mm;
+}
+
+.exchange-doc__signs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10mm;
+  margin-top: 10mm;
+}
+
+.exchange-doc__signs > div {
+  text-align: center;
+  line-height: 1.5;
+}
+
+.exchange-doc__signs .memo-sign__line {
+  margin-top: 7mm;
+}
+
+.exchange-doc__approval {
+  margin-top: 8mm;
+  line-height: 1.6;
+}
+
+.exchange-doc__approval .memo-approval__item {
+  margin-left: 8mm;
+  margin-top: 2mm;
+}
+
+.exchange-doc__approval .memo-sign__line {
+  margin-top: 5mm;
+}
+
+.exchange-doc__approval .memo-sign__name {
+  margin-top: 1mm;
+}
+
+@media (max-width: 600px) {
+  .exchange-doc__signs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Simplified attendance overview */
+.attendance-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  border: 1px solid #d7e8f5;
+  border-radius: 12px;
+  background: #f8fcff;
+}
+
+.attendance-summary {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.attendance-metric {
+  min-width: 68px;
+  padding: 4px 9px;
+  border: 1px solid #e7f1fa;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.attendance-metric span {
+  display: block;
+  font-size: 8.5px;
+  color: #8aa3ba;
+}
+
+.attendance-metric strong {
+  display: block;
+  margin-top: 1px;
+  font-family: "Mali", "Sarabun", var(--font-sans);
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--toy-navy);
+}
+
+.attendance-metric.is-present strong {
+  color: #15803d;
+}
+
+.attendance-metric.is-absent strong {
+  color: #b91c1c;
+}
+
+.attendance-metric.is-money strong {
+  font-size: 14px;
+  color: #0c4a6e;
+}
+
+.attendance-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.attendance-actions .btn {
+  padding: 5px 9px;
+  font-size: 10px;
+}
+
+.attendance-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border: 1px solid #e3eff8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #5c7d9c;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.attendance-filter-toggle input {
+  accent-color: var(--toy-navy);
+}
+
+@media (max-width: 760px) {
+  .attendance-overview {
+    align-items: stretch;
+  }
+
+  .attendance-summary {
+    width: 100%;
+  }
+
+  .attendance-metric {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .attendance-actions {
+    width: 100%;
+  }
+
+  .attendance-actions .btn,
+  .attendance-filter-toggle {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Exchanged shifts are muted gray */
+.att-chip.is-exchanged {
+  border-style: dashed;
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.att-chip.is-exchanged .att-chip__status {
+  color: #64748b;
+}
+
+.att-chip.is-exchanged .att-chip__text strong,
+.att-chip.is-exchanged .att-chip__text small {
+  color: #94a3b8;
+}
+
+.exchange-form__hint {
+  margin-top: 3px;
+  font-size: 9.5px;
+  color: #8aa3ba;
+}
+
+.exchange-form__reason {
+  min-height: 54px;
+}
+
+/* Exchange request form matching the original PDF layout */
+.doc--exchange {
+  padding: 15mm 20mm 18mm;
+  line-height: 1.5;
+}
+
+.exchange-doc__title {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-doc);
+  font-size: 18pt;
+  font-weight: 700;
+}
+
+.exchange-doc__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: 1mm;
+}
+
+.exchange-doc__hospital {
+  font-size: 14pt;
+}
+
+.exchange-doc__date-line {
+  margin-top: 1mm;
+  font-size: 14pt;
+}
+
+.exchange-doc__body {
+  margin-top: 8mm;
+}
+
+.exchange-doc__line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2mm;
+  margin-top: 2.2mm;
+  font-size: 14pt;
+  line-height: 1.55;
+}
+
+.exchange-doc__line strong {
+  flex-shrink: 0;
+}
+
+.exchange-doc__indent {
+  margin-left: 12mm;
+}
+
+.exchange-doc__value {
+  display: inline-block;
+  min-width: 8mm;
+  border-bottom: 1px dotted #000;
+  padding: 0 2px;
+}
+
+.exchange-doc__center {
+  margin-top: 4mm;
+  text-align: center;
+  font-size: 14pt;
+}
+
+.exchange-doc__signature {
+  width: 112mm;
+  margin-left: auto;
+  margin-top: 10mm;
+  font-size: 14pt;
+}
+
+.exchange-doc__signature--replacement {
+  margin-top: 9mm;
+}
+
+.exchange-doc__signature-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2mm;
+}
+
+.exchange-doc__signature-name {
+  margin-top: 1mm;
+  text-align: center;
+}
+
+.exchange-doc__signature-pos {
+  margin-top: 1mm;
+}
+
+.exchange-doc__approve {
+  margin-top: 14mm;
+  text-align: center;
+  font-size: 14pt;
+}
+
+.exchange-doc__signature--approval {
+  margin-top: 10mm;
+}
+
+@media (max-width: 600px) {
+  .exchange-doc__signature {
+    width: 100%;
+  }
+}
+
+
+/* Dotted field layout matching the original exchange form */
+.doc--exchange {
+  padding: 15mm 20mm 18mm;
+  line-height: 1.5;
+}
+
+.exchange-doc__title {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-doc);
+  font-size: 18pt;
+  font-weight: 700;
+}
+
+.exchange-doc__hospital {
+  margin-top: 1mm;
+  text-align: right;
+  font-size: 14pt;
+}
+
+.exchange-doc__date-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 1.2mm;
+  margin-top: 1mm;
+  font-size: 13.5pt;
+}
+
+.exchange-doc__body {
+  margin-top: 8mm;
+}
+
+.exchange-doc__line {
+  display: flex;
+  align-items: baseline;
+  gap: 2mm;
+  margin-top: 2.2mm;
+  font-size: 14pt;
+  line-height: 1.55;
+}
+
+.exchange-doc__field-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 1.2mm;
+  margin-top: 2.2mm;
+  font-size: 13.5pt;
+  line-height: 1.7;
+}
+
+.exchange-doc__indent {
+  margin-left: 12mm;
+}
+
+.exchange-doc__dots {
+  display: inline-block;
+  flex: 1 1 24mm;
+  min-width: 16mm;
+  min-height: 1.2em;
+  padding: 0 1mm;
+  border-bottom: 1px dotted #000;
+  text-align: center;
+  vertical-align: baseline;
+}
+
+.exchange-doc__date-line .exchange-doc__dots,
+.exchange-doc__field-line .exchange-doc__dots.is-day,
+.exchange-doc__signature-line .exchange-doc__dots.is-day {
+  flex: 0 0 11mm;
+  min-width: 11mm;
+}
+
+.exchange-doc__date-line .exchange-doc__dots.is-month,
+.exchange-doc__field-line .exchange-doc__dots.is-month,
+.exchange-doc__signature-line .exchange-doc__dots.is-month {
+  flex: 0 0 26mm;
+  min-width: 26mm;
+}
+
+.exchange-doc__date-line .exchange-doc__dots.is-year,
+.exchange-doc__field-line .exchange-doc__dots.is-year,
+.exchange-doc__signature-line .exchange-doc__dots.is-year {
+  flex: 0 0 15mm;
+  min-width: 15mm;
+}
+
+.exchange-doc__field-line .exchange-doc__dots.is-time {
+  flex: 0 0 17mm;
+  min-width: 17mm;
+}
+
+.exchange-doc__center {
+  margin-top: 4mm;
+  text-align: center;
+  font-size: 14pt;
+}
+
+.exchange-doc__signature {
+  width: 112mm;
+  margin-left: auto;
+  margin-top: 10mm;
+  font-size: 14pt;
+}
+
+.exchange-doc__signature--replacement {
+  margin-top: 9mm;
+}
+
+.exchange-doc__signature-line {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5mm;
+}
+
+.exchange-doc__signature-line .exchange-doc__dots {
+  flex: 1 1 auto;
+  min-width: 38mm;
+}
+
+.exchange-doc__signature-line.is-position .exchange-doc__dots {
+  min-width: 45mm;
+}
+
+.exchange-doc__signature-line.is-date {
+  flex-wrap: wrap;
+  gap: 1mm;
+}
+
+.exchange-doc__signature-name {
+  margin-top: 1mm;
+  text-align: center;
+}
+
+.exchange-doc__signature-position {
+  margin-top: 1mm;
+}
+
+.exchange-doc__approve {
+  margin-top: 14mm;
+  text-align: center;
+  font-size: 14pt;
+}
+
+.exchange-doc__signature--approval {
+  margin-top: 10mm;
+}
+
+@media (max-width: 600px) {
+  .exchange-doc__signature {
+    width: 100%;
+  }
+}
