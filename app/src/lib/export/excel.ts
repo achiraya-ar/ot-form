@@ -124,18 +124,17 @@ function pageSetup(
   ws.views = [{ showGridLines: false }];
 }
 
-function saveWorkbook(workbook: ExcelJS.Workbook, filename: string) {
-  return workbook.xlsx.writeBuffer().then((buffer) =>
-    saveBlob(
-      new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }),
-      filename,
-    ),
-  );
+async function buildWorkbook(workbook: ExcelJS.Workbook, filename: string) {
+  const buffer = await workbook.xlsx.writeBuffer();
+  return {
+    blob: new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+    filename,
+  };
 }
 
-export async function exportScheduleXlsx(set: DocumentSet, settings: AppSettings) {
+export async function buildScheduleXlsx(set: DocumentSet, settings: AppSettings) {
   const rows = getForm3Rows(set, settings);
   const days = new Date(set.year - 543, set.month, 0).getDate();
   const dayStart = 4;
@@ -257,13 +256,13 @@ export async function exportScheduleXlsx(set: DocumentSet, settings: AppSettings
   borderRange(ws, 4, 1, Math.max(tableEnd, 5), lastCol);
   ws.pageSetup.printTitlesRow = "4:5";
 
-  return saveWorkbook(
+  return buildWorkbook(
     workbook,
-    `ตารางเวร_${toThaiDigits(String(set.month).padStart(2, "0"))}_${toThaiDigits(set.year)}.xlsx`,
+    "ตารางการปฏิบัติงานนอกเวลาราชการ.xlsx",
   );
 }
 
-export async function exportAttendanceXlsx(
+export async function buildAttendanceXlsx(
   set: DocumentSet,
   settings: AppSettings,
 ) {
@@ -442,13 +441,13 @@ export async function exportAttendanceXlsx(
 
   ws.pageSetup.printTitlesRow = "4:4";
 
-  return saveWorkbook(
+  return buildWorkbook(
     workbook,
-    `ใบรายชื่อเข้างาน_${toThaiDigits(String(set.month).padStart(2, "0"))}_${toThaiDigits(set.year)}.xlsx`,
+    "บัญชีลงเวลาปฏิบัติงานนอกเวลาราชการ.xlsx",
   );
 }
 
-export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings) {
+export async function buildPaymentXlsx(set: DocumentSet, settings: AppSettings) {
   const rows = getForm5Rows(set, settings);
   const days = new Date(set.year - 543, set.month, 0).getDate();
   const dayStart = 5;
@@ -702,8 +701,27 @@ export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings)
     });
   });
 
-  return saveWorkbook(
+  return buildWorkbook(
     workbook,
-    `หลักฐานการจ่ายเงิน_${toThaiDigits(String(set.month).padStart(2, "0"))}_${toThaiDigits(set.year)}.xlsx`,
+    "หลักฐานการจ่ายเงินค่าตอบแทน.xlsx",
   );
+}
+
+
+export async function exportScheduleXlsx(set: DocumentSet, settings: AppSettings) {
+  const { blob, filename } = await buildScheduleXlsx(set, settings);
+  return saveBlob(blob, filename);
+}
+
+export async function exportAttendanceXlsx(
+  set: DocumentSet,
+  settings: AppSettings,
+) {
+  const { blob, filename } = await buildAttendanceXlsx(set, settings);
+  return saveBlob(blob, filename);
+}
+
+export async function exportPaymentXlsx(set: DocumentSet, settings: AppSettings) {
+  const { blob, filename } = await buildPaymentXlsx(set, settings);
+  return saveBlob(blob, filename);
 }

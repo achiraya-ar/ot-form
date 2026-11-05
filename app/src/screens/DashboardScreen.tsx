@@ -55,17 +55,6 @@ const FILTERS: { value: StatusFilter; label: string }[] = [
 const isInProgress = (set: DocumentSet) =>
   set.status === "in_progress" || set.status === "draft";
 
-type PeriodOption = {
-  key: string;
-  label: string;
-  shortLabel: string;
-  year: number;
-  month: number;
-  count: number;
-};
-
-const periodKey = (year: number, month: number) =>
-  `${year}-${String(month).padStart(2, "0")}`;
 
 export function DashboardScreen({
   onCreate,
@@ -79,51 +68,55 @@ export function DashboardScreen({
   const fileRef = useRef<HTMLInputElement>(null);
   const [deleteTarget, setDeleteTarget] = useState<DocumentSet | null>(null);
   const [query, setQuery] = useState("");
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const periodRef = useRef<HTMLDivElement>(null);
+
+  const now = new Date();
+  const currentBE = now.getFullYear() + 543;
+  const currentMonth = now.getMonth() + 1;
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(() =>
     sets.some(isInProgress) ? "in_progress" : "all",
   );
-  const [period, setPeriod] = useState("all");
-  const [periodOpen, setPeriodOpen] = useState(false);
-  const [periodYear, setPeriodYear] = useState<number | null>(null);
-  const periodRef = useRef<HTMLDivElement>(null);
+  const [selectedYear, setSelectedYear] = useState(currentBE);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [periodYear, setPeriodYear] = useState(currentBE);
+  const [wholeYear, setWholeYear] = useState(false);
 
-  const periods = useMemo<PeriodOption[]>(() => {
-    const map = new Map<string, PeriodOption>();
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    for (const set of sets) years.add(set.year);
+    years.add(selectedYear);
+    years.add(periodYear);
+    return [...years].sort((a, b) => b - a);
+  }, [sets, selectedYear, periodYear]);
+
+  const monthCounts = useMemo(() => {
+    const counts = Array.from({ length: 12 }, () => 0);
     for (const set of sets) {
-      const key = periodKey(set.year, set.month);
-      const existing = map.get(key);
-      if (existing) {
-        existing.count += 1;
-      } else {
-        map.set(key, {
-          key,
-          label: `${THAI_MONTHS[set.month - 1]} ${set.year}`,
-          shortLabel: `${THAI_MONTHS_SHORT[set.month - 1]} ${set.year}`,
-          year: set.year,
-          month: set.month,
-          count: 1,
-        });
+      if (set.year === periodYear) {
+        counts[set.month - 1] += 1;
       }
     }
-    return [...map.values()].sort((a, b) => b.key.localeCompare(a.key));
-  }, [sets]);
+    return counts;
+  }, [sets, periodYear]);
 
-  const activePeriod = useMemo(
-    () => (period === "all" ? null : periods.find((option) => option.key === period) ?? null),
-    [period, periods],
+  const periodSets = useMemo(
+    () =>
+      wholeYear
+        ? sets.filter((set) => set.year === selectedYear)
+        : sets.filter(
+            (set) => set.year === selectedYear && set.month === selectedMonth,
+          ),
+    [wholeYear, sets, selectedYear, selectedMonth],
   );
 
-  const periodYears = useMemo(
-    () => [...new Set(periods.map((option) => option.year))].sort((a, b) => b - a),
-    [periods],
-  );
-
-  const viewingYear = periodYear ?? activePeriod?.year ?? periods[0]?.year ?? null;
+  const periodLabel = wholeYear
+    ? `ทุกเดือน · ${selectedYear}`
+    : `${THAI_MONTHS[selectedMonth - 1]} ${selectedYear}`;
 
   const openPeriodPicker = () => {
-    if (!periodOpen) {
-      setPeriodYear(activePeriod?.year ?? periods[0]?.year ?? null);
-    }
+    if (!periodOpen) setPeriodYear(selectedYear);
     setPeriodOpen((open) => !open);
   };
 
@@ -147,19 +140,18 @@ export function DashboardScreen({
     };
   }, [periodOpen]);
 
-  useEffect(() => {
-    if (period !== "all" && !periods.some((option) => option.key === period)) {
-      setPeriod("all");
-    }
-  }, [period, periods]);
+  const chooseMonth = (month: number) => {
+    setWholeYear(false);
+    setSelectedYear(periodYear);
+    setSelectedMonth(month);
+    setPeriodOpen(false);
+  };
 
-  const periodSets = useMemo(
-    () =>
-      activePeriod
-        ? sets.filter((set) => periodKey(set.year, set.month) === activePeriod.key)
-        : sets,
-    [sets, activePeriod],
-  );
+  const chooseWholeYear = () => {
+    setWholeYear(true);
+    setSelectedYear(periodYear);
+    setPeriodOpen(false);
+  };
 
   const summary = useMemo(() => {
     const inProgress = periodSets.filter(isInProgress).length;
@@ -206,11 +198,33 @@ export function DashboardScreen({
     });
   }, [sorted, query, statusFilter]);
 
-  const clearFilters = () => {
-    setQuery("");
-    setStatusFilter("all");
-    setPeriod("all");
-  };
+  const periodEmpty = periodSets.length === 0;
+  const emptyTitle = periodEmpty
+    ? "ไม่มีชุดเอกสารในช่วงที่เลือก"
+    : query.trim()
+      ? "ไม่พบชุดที่ค้นหา"
+      : statusFilter === "in_progress"
+        ? "ไม่มีชุดที่กำลังทำในช่วงนี้"
+        : statusFilter === "completed"
+          ? "ไม่มีชุดที่เสร็จแล้วในช่วงนี้"
+          : "ไม่มีชุดเอกสารในช่วงนี้";
+  const emptyDetail = periodEmpty
+    ? wholeYear
+      ? `ไม่พบชุดเอกสารในปี ${selectedYear}`
+      : `ไม่พบชุดเอกสารใน ${periodLabel}`
+    : query.trim()
+      ? "ลองใช้คำค้นอื่น หรือล้างคำค้น"
+      : statusFilter === "in_progress"
+        ? wholeYear
+          ? `ปี ${selectedYear} ยังไม่มีชุดที่กำลังทำ`
+          : `ช่วง ${periodLabel} ยังไม่มีชุดที่กำลังทำ`
+        : statusFilter === "completed"
+          ? wholeYear
+            ? `ปี ${selectedYear} ยังไม่มีชุดที่เสร็จแล้ว`
+            : `ช่วง ${periodLabel} ยังไม่มีชุดที่เสร็จแล้ว`
+          : wholeYear
+            ? `ปี ${selectedYear} ยังไม่มีชุดเอกสาร`
+            : `ช่วง ${periodLabel} ยังไม่มีชุดเอกสาร`;
 
   const handleImport = async (file: File | undefined) => {
     if (!file) return;
@@ -270,11 +284,12 @@ export function DashboardScreen({
                 onClick={openPeriodPicker}
                 aria-haspopup="dialog"
                 aria-expanded={periodOpen}
-                aria-label={`เลือกช่วงข้อมูล ปัจจุบัน ${activePeriod?.label ?? "ทุกช่วงเวลา"}`}
+                aria-label={`เลือกช่วงข้อมูล ปัจจุบัน ${periodLabel}`}
               >
                 <CalendarDays size={14} aria-hidden="true" />
-                <span className="dash-period__value">
-                  {activePeriod?.label ?? "ทุกช่วงเวลา"}
+                <span className="dash-period__value">{periodLabel}</span>
+                <span className="dash-period__count">
+                  {formatNumberUi(periodSets.length)} ชุด
                 </span>
                 <ChevronDown size={14} aria-hidden="true" />
               </button>
@@ -283,78 +298,71 @@ export function DashboardScreen({
                 <div className="dash-period-pop" role="dialog" aria-label="เลือกช่วงข้อมูล">
                   <div className="dash-period-pop__head">
                     <strong>เลือกช่วงข้อมูล</strong>
-                    <span>เลือกปี แล้วเลือกเดือนที่มีชุดเอกสาร</span>
+                    <span>เลือกปีและเดือน หรือทุกเดือนในปีที่เลือก</span>
+                  </div>
+
+                  <div className="dash-period-years" role="group" aria-label="เลือกปี">
+                    {availableYears.map((year) => (
+                      <button
+                        key={year}
+                        type="button"
+                        className={periodYear === year ? "is-active" : ""}
+                        aria-pressed={periodYear === year}
+                        onClick={() => setPeriodYear(year)}
+                      >
+                        {year}
+                      </button>
+                    ))}
                   </div>
 
                   <button
                     type="button"
-                    className={`dash-period-all ${period === "all" ? "is-active" : ""}`}
-                    onClick={() => {
-                      setPeriod("all");
-                      setPeriodOpen(false);
-                    }}
+                    className={`dash-period-all ${
+                      wholeYear && selectedYear === periodYear ? "is-active" : ""
+                    }`}
+                    onClick={chooseWholeYear}
                   >
-                    <span>ทุกช่วงเวลา</span>
-                    <span>{formatNumberUi(sets.length)} ชุด</span>
-                    {period === "all" && <Check size={14} />}
+                    <span>ทุกเดือนในปี {periodYear}</span>
+                    <span>
+                      {formatNumberUi(
+                        monthCounts.reduce((sum, count) => sum + count, 0),
+                      )}{" "}
+                      ชุด
+                    </span>
+                    {wholeYear && selectedYear === periodYear && <Check size={14} />}
                   </button>
 
-                  {periods.length > 0 && (
-                    <>
-                      <div className="dash-period-years" role="group" aria-label="เลือกปี">
-                        {periodYears.map((year) => (
-                          <button
-                            key={year}
-                            type="button"
-                            className={viewingYear === year ? "is-active" : ""}
-                            onClick={() => setPeriodYear(year)}
-                          >
-                            {year}
-                          </button>
-                        ))}
-                      </div>
-
-                      {viewingYear !== null && (
-                        <div
-                          className="dash-period-months"
-                          role="group"
-                          aria-label={`เลือกเดือน พ.ศ. ${viewingYear}`}
+                  <div
+                    className="dash-period-months"
+                    role="group"
+                    aria-label={`เลือกเดือน พ.ศ. ${periodYear}`}
+                  >
+                    {THAI_MONTHS_SHORT.map((monthLabel, index) => {
+                      const month = index + 1;
+                      const count = monthCounts[index];
+                      const active =
+                        !wholeYear &&
+                        selectedYear === periodYear &&
+                        selectedMonth === month;
+                      const disabled = count === 0 && !active;
+                      return (
+                        <button
+                          key={monthLabel}
+                          type="button"
+                          className={`dash-period-month ${
+                            count > 0 || active ? "is-available" : ""
+                          } ${active ? "is-active" : ""}`}
+                          disabled={disabled}
+                          aria-pressed={active}
+                          title={`${monthLabel} · ${formatNumberUi(count)} ชุด`}
+                          onClick={() => chooseMonth(month)}
                         >
-                          {THAI_MONTHS_SHORT.map((monthLabel, index) => {
-                            const month = index + 1;
-                            const option = periods.find(
-                              (item) => item.year === viewingYear && item.month === month,
-                            );
-                            return (
-                              <button
-                                key={monthLabel}
-                                type="button"
-                                className={`dash-period-month ${option ? "is-available" : ""} ${
-                                  option && period === option.key ? "is-active" : ""
-                                }`}
-                                disabled={!option}
-                                title={
-                                  option
-                                    ? `${option.label} · ${formatNumberUi(option.count)} ชุด`
-                                    : `${monthLabel} ${viewingYear} · ไม่มีข้อมูล`
-                                }
-                                onClick={() => {
-                                  if (!option) return;
-                                  setPeriod(option.key);
-                                  setPeriodOpen(false);
-                                }}
-                              >
-                                <strong>{monthLabel}</strong>
-                                <span>
-                                  {option ? `${formatNumberUi(option.count)} ชุด` : "—"}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-                  )}
+                          <strong>{monthLabel}</strong>
+                          <span>{count > 0 ? `${formatNumberUi(count)} ชุด` : "—"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -383,7 +391,7 @@ export function DashboardScreen({
               </dd>
             </div>
             <div className="dash-metric dash-metric--money">
-              <dt>{activePeriod ? "ยอดของเดือนที่เลือก" : "ยอดรวมทั้งหมด"}</dt>
+              <dt>ยอดในช่วงที่เลือก</dt>
               <dd>
                 <span className="dash-metric__unit">฿</span>
                 {formatBahtUi(summary.totalAmount)}
@@ -400,17 +408,6 @@ export function DashboardScreen({
             <span>
               {formatNumberUi(filtered.length)} จาก {formatNumberUi(periodSets.length)} ชุด
             </span>
-            {activePeriod && (
-              <button
-                type="button"
-                className="dash-scope-chip"
-                onClick={() => setPeriod("all")}
-                title="ดูทุกช่วงเวลา"
-              >
-                {activePeriod.shortLabel}
-                <X size={11} />
-              </button>
-            )}
           </div>
 
           <div className="dash-toolbar">
@@ -464,12 +461,36 @@ export function DashboardScreen({
               <SearchX size={22} />
             </span>
             <div>
-              <strong>ไม่พบชุดเอกสารที่ตรงกับเงื่อนไข</strong>
-              <p>ลองใช้คำค้นอื่น เลือกสถานะอื่น หรือดูทุกช่วงเวลา</p>
+              <strong>{emptyTitle}</strong>
+              <p>{emptyDetail}</p>
             </div>
-            <Button variant="secondary" size="sm" onClick={clearFilters}>
-              ล้างตัวกรอง
-            </Button>
+            <div className="dash-no-result__actions">
+              {query && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setQuery("")}
+                >
+                  ล้างคำค้น
+                </Button>
+              )}
+              {!periodEmpty && statusFilter !== "all" && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setStatusFilter("all")}
+                >
+                  ดูทั้งหมด
+                </Button>
+              )}
+              <Button
+                variant={periodEmpty ? "primary" : "secondary"}
+                size="sm"
+                onClick={openPeriodPicker}
+              >
+                เปลี่ยนช่วงข้อมูล
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="set-list">

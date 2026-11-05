@@ -37,3 +37,28 @@ export async function saveBlob(blob: Blob, filename: string): Promise<boolean> {
   saveAs(blob, filename);
   return true;
 }
+
+export async function saveFilesToFolder(
+  files: Array<{ blob: Blob; filename: string }>,
+  folderName: string,
+): Promise<string | null> {
+  if (isTauri()) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const payload = await Promise.all(
+      files.map(async (file) => ({
+        name: file.filename,
+        base64Data: await blobToBase64(file.blob),
+      })),
+    );
+    const savedPath = await invoke<string | null>("save_export_folder", {
+      folderName,
+      files: payload,
+    });
+    return savedPath;
+  }
+
+  for (const file of files) {
+    saveAs(file.blob, file.filename);
+  }
+  return "ไฟล์ทั้ง 5 ถูกดาวน์โหลดแล้ว";
+}

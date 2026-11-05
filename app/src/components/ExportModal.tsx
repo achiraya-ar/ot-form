@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Download,
+  FolderDown,
   FileSpreadsheet,
   FileText,
   Lock,
@@ -14,6 +15,7 @@ import {
   exportPaymentXlsx,
   exportScheduleXlsx,
 } from "../lib/export/excel";
+import { exportAllFolder } from "../lib/export/folder";
 
 type Busy = string | null;
 
@@ -28,6 +30,7 @@ export function ExportModal({
 }) {
   const notify = useToast();
   const [busy, setBusy] = useState<Busy>(null);
+  const [savedFolder, setSavedFolder] = useState<string | null>(null);
   const hasSchedule = set.assignments.length > 0;
 
   const run = async (key: string, action: () => Promise<boolean>, success: string) => {
@@ -38,6 +41,22 @@ export function ExportModal({
     } catch (error) {
       console.error(error);
       notify("ส่งออกไม่สำเร็จ กรุณาลองใหม่", "error");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleFolder = async () => {
+    setBusy("folder");
+    try {
+      const saved = await exportAllFolder(set, settings);
+      if (saved) {
+        setSavedFolder(saved);
+        notify("บันทึกทั้ง 5 ไฟล์ลงโฟลเดอร์แล้ว");
+      }
+    } catch (error) {
+      console.error(error);
+      notify("บันทึกโฟลเดอร์ไม่สำเร็จ กรุณาลองใหม่", "error");
     } finally {
       setBusy(null);
     }
@@ -108,6 +127,16 @@ export function ExportModal({
           <Button variant="secondary" onClick={onClose}>
             ปิด
           </Button>
+          <Button
+            variant="primary"
+            onClick={handleFolder}
+            disabled={!hasSchedule || busy !== null}
+          >
+            <FolderDown size={16} />
+            {busy === "folder"
+              ? "กำลังสร้างโฟลเดอร์…"
+              : "ส่งออกทั้ง 5 ไฟล์เป็นโฟลเดอร์"}
+          </Button>
         </>
       }
     >
@@ -150,6 +179,16 @@ export function ExportModal({
           );
         })}
       </div>
+
+      {savedFolder && (
+        <div className="export-saved">
+          <FolderDown size={17} />
+          <div>
+            <strong>บันทึกครบ 5 ไฟล์แล้ว</strong>
+            <span>{savedFolder}</span>
+          </div>
+        </div>
+      )}
 
       <div className="export-note">
         <Printer size={16} />

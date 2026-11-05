@@ -177,7 +177,7 @@ function paginateOrderRows(rows: ReturnType<typeof getForm1Rows>) {
   return pages;
 }
 
-export async function exportOrderDocx(set: DocumentSet, settings: AppSettings) {
+export async function buildOrderDocx(set: DocumentSet, settings: AppSettings) {
   const garuda = await loadImage("garuda.png");
   const rows = getForm1Rows(set, settings);
   const shifts = getDocumentShifts(set, settings);
@@ -374,10 +374,18 @@ export async function exportOrderDocx(set: DocumentSet, settings: AppSettings) {
   });
 
   const blob = await Packer.toBlob(doc);
-  return saveBlob(blob, `คำสั่งแต่งตั้ง_${(orderNumber || "blank").replace(/\//g, "-")}.docx`);
+  return {
+    blob,
+    filename: "คำสั่งแต่งตั้งเจ้าหน้าที่ปฏิบัติงานนอกเวลา.docx",
+  };
 }
 
-export async function exportMemoDocx(set: DocumentSet, settings: AppSettings) {
+export async function exportOrderDocx(set: DocumentSet, settings: AppSettings) {
+  const { blob, filename } = await buildOrderDocx(set, settings);
+  return saveBlob(blob, filename);
+}
+
+export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
   const garuda = await loadImage("garuda-small.png");
   const bodyText = set.memoBody?.trim() ? set.memoBody : memoBodyText(set, settings);
   const groupHead = set.signatories.groupHead;
@@ -548,5 +556,13 @@ export async function exportMemoDocx(set: DocumentSet, settings: AppSettings) {
   });
 
   const blob = await Packer.toBlob(doc);
-  return saveBlob(blob, `บันทึกขออนุมัติ_${toThaiDigits(set.memoNumber).replace(/\//g, "-")}.docx`);
+  return {
+    blob,
+    filename: "บันทึกขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ.docx",
+  };
+}
+
+export async function exportMemoDocx(set: DocumentSet, settings: AppSettings) {
+  const { blob, filename } = await buildMemoDocx(set, settings);
+  return saveBlob(blob, filename);
 }

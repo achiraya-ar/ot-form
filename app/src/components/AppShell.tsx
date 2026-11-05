@@ -43,9 +43,6 @@ export function AppShell({
         </div>
 
         <div className="top-bar__right">
-          <span className="top-bar__status">
-            <span className="dot dot--green" /> พร้อมใช้งาน
-          </span>
           <IconButton label="ตั้งค่าระบบ" onClick={onSettings}>
             <SettingsIcon size={18} />
           </IconButton>

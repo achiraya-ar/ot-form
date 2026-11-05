@@ -12552,3 +12552,179 @@ body.workbench-open .toast-stack {
     top: calc(var(--topbar-height) + 220px);
   }
 }
+
+/* Multi-select period picker */
+
+.dash-period-section {
+  margin-top: 12px;
+}
+
+.dash-period-section__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #5c7d9c;
+}
+
+.dash-period-section .dash-period-years {
+  margin: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.dash-period-years button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dash-period-years button span {
+  font-size: 8px;
+  color: #8aa3ba;
+}
+
+.dash-period-years button.is-active span {
+  color: #bae6fd;
+}
+
+.dash-period-pop__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #e7f1fa;
+}
+
+.dash-period-pop__foot > span {
+  font-size: 9.5px;
+  color: #8aa3ba;
+}
+
+.dash-period-pop__foot .btn {
+  padding: 5px 10px;
+  font-size: 10px;
+}
+
+.dash-no-result__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.dash-no-result__actions .btn {
+  margin-left: 0;
+}
+
+@media (max-width: 760px) {
+  .dash-no-result__actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .dash-no-result__actions .btn {
+    flex: 1 1 100%;
+  }
+}
+
+/* Selected month/year must stay navy on hover */
+.dash-period-month.is-available:not(.is-active):hover {
+  border-color: #7dd3fc;
+  background: #f1f9ff;
+}
+
+.dash-period-month.is-active,
+.dash-period-month.is-active:hover {
+  border-color: var(--toy-navy);
+  background: var(--toy-navy);
+  color: #ffffff;
+}
+
+.dash-period-month.is-active:hover span {
+  color: #bae6fd;
+}
+
+.dash-period-years button.is-active:hover {
+  border-color: var(--toy-navy);
+  background: var(--toy-navy);
+  color: #ffffff;
+}
+
+/* Prominent selected-period summary */
+.dash-period {
+  max-width: 320px;
+  height: 36px;
+  border-color: #7dd3fc;
+  background: linear-gradient(135deg, #e0f2fe 0%, #ffffff 100%);
+  box-shadow: 0 8px 18px -14px rgba(30, 58, 138, 0.45);
+}
+
+.dash-period__value {
+  font-weight: 700;
+  color: var(--toy-navy);
+}
+
+.dash-period__count {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--toy-navy);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dash-period.is-open .dash-period__count {
+  background: #0c4a6e;
+}
+
+@media (max-width: 760px) {
+  .dash-period {
+    max-width: none;
+  }
+}
+
+/* All months of the selected year */
+.dash-period-all {
+  margin-bottom: 8px;
+}
+
+.export-saved {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 11px 13px;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.export-saved > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.export-saved > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.export-saved strong {
+  font-size: 11.5px;
+}
+
+.export-saved span {
+  font-size: 10px;
+  color: #3f7a52;
+  overflow-wrap: anywhere;
+}
