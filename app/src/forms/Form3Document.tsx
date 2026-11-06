@@ -113,10 +113,7 @@ export function Form3Document({
                           )}-${String(dayIndex + 1).padStart(2, "0")}`;
                           const value = shift ? row.cells[date]?.[shift.id] ?? "" : "";
                           return (
-                            <td
-                              key={dayIndex}
-                              className={`day-cell ${value === "-" ? "is-absent" : ""}`}
-                            >
+                            <td key={dayIndex} className="day-cell">
                               <span>{value}</span>
                             </td>
                           );

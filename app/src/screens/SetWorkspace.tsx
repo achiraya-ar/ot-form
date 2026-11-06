@@ -219,7 +219,7 @@ export function SetWorkspace({
       attendance,
       shiftExchanges: exchanges,
     }));
-    completeAndAdvance(4, "บันทึกใบลงเวลาแล้ว ตารางเวรจะแสดงเครื่องหมาย – สำหรับผู้ที่ไม่มา");
+    completeAndAdvance(4, "บันทึกใบลงเวลาแล้ว ตารางปฏิบัติงานยังคงแสดงเวลาเวรตามที่กำหนด");
   };
 
   const savePayment = (patch: {

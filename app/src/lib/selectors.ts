@@ -438,9 +438,25 @@ export interface Form3StaffRow {
   cells: Record<string, Record<string, string>>;
 }
 
-export function getForm3Rows(set: DocumentSet, settings: AppSettings): Form3StaffRow[] {
+/**
+ * Rows for the overtime schedule.
+ *
+ * The schedule is the document approved before the work takes place, so it
+ * keeps the assigned shift times even when the person is later marked absent.
+ * The payment form opts into `markAbsent` so its day cells still show `-` for
+ * days that are not paid.
+ */
+export function getForm3Rows(
+  set: DocumentSet,
+  settings: AppSettings,
+  options: { markAbsent?: boolean } = {},
+): Form3StaffRow[] {
+  const markAbsent = options.markAbsent ?? false;
   const monthDays = getDaysInMonth(set.year, set.month);
   return getSetStaff(set, settings).map((staff) => {
+    const staffAssignments = set.assignments.filter(
+      (assignment) => assignment.staffId === staff.id,
+    );
     const usedShifts = getUsedShiftsForStaff(set, settings, staff.id);
     const shifts =
       usedShifts.length > 0
@@ -453,14 +469,14 @@ export function getForm3Rows(set: DocumentSet, settings: AppSettings): Form3Staf
       ).padStart(2, "0")}`;
       cells[date] = {};
       for (const shift of shifts) {
-        const assignment = set.assignments.find(
-          (a) => a.date === date && a.staffId === staff.id && a.shiftId === shift.id,
+        const assignment = staffAssignments.find(
+          (a) => a.date === date && a.shiftId === shift.id,
         );
         if (!assignment) {
           cells[date][shift.id] = "";
           continue;
         }
-        if (isAbsent(set, date, staff.id, shift.id)) {
+        if (markAbsent && isAbsent(set, date, staff.id, shift.id)) {
           cells[date][shift.id] = "-";
         } else {
           cells[date][shift.id] = formatTimeRangeDoc(shift.start, shift.end);
@@ -471,7 +487,9 @@ export function getForm3Rows(set: DocumentSet, settings: AppSettings): Form3Staf
     return {
       staff,
       shifts,
-      totalDays: summary.days,
+      totalDays: markAbsent
+        ? summary.days
+        : new Set(staffAssignments.map((assignment) => assignment.date)).size,
       totalHours: summary.hours,
       cells,
     };
@@ -601,18 +619,20 @@ export interface Form5StaffRow {
 }
 
 export function getForm5Rows(set: DocumentSet, settings: AppSettings): Form5StaffRow[] {
-  const rows: Form5StaffRow[] = getForm3Rows(set, settings).map((row) => {
-    const summary = staffPayment(set, settings, row.staff.id);
-    return {
-      staff: row.staff,
-      shifts: row.shifts,
-      totalDays: summary.days,
-      totalHours: summary.hours,
-      amount: summary.amount,
-      rate: set.rateOverrides?.[row.staff.id] ?? row.staff.ratePerHour,
-      cells: row.cells,
-    };
-  });
+  const rows: Form5StaffRow[] = getForm3Rows(set, settings, { markAbsent: true }).map(
+    (row) => {
+      const summary = staffPayment(set, settings, row.staff.id);
+      return {
+        staff: row.staff,
+        shifts: row.shifts,
+        totalDays: summary.days,
+        totalHours: summary.hours,
+        amount: summary.amount,
+        rate: set.rateOverrides?.[row.staff.id] ?? row.staff.ratePerHour,
+        cells: row.cells,
+      };
+    },
+  );
 
   const rowByStaff = new Map(rows.map((row) => [row.staff.id, row]));
   const countedDates = new Map(
