@@ -142,10 +142,14 @@ export function ExchangeRequestDocument({
           <span className="exchange-doc__dots" />
           <span>ผู้ปฏิบัติงานแทน</span>
         </p>
-        <p className="exchange-doc__signature-name">({replacementName})</p>
+        <p className="exchange-doc__signature-name">
+          {replacement ? `(${replacementName})` : `(${"\u00A0".repeat(10)})`}
+        </p>
         <p className="exchange-doc__signature-line is-position">
           <span>ตำแหน่ง</span>
-          <span className="exchange-doc__dots">{replacementPosition}</span>
+          <span className="exchange-doc__dots">
+            {replacement ? replacementPosition : ""}
+          </span>
         </p>
       </div>
 

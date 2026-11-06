@@ -410,7 +410,7 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
       children: [
         new TextRun({ text: `${label} `, bold: true, font: FONT, size: 40 }),
         new TextRun({ text: value, font: FONT, size: BODY_SIZE, underline: {} }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE }),
+        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE, underline: {} }),
       ],
     });
 
@@ -436,8 +436,13 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
       ],
       children: [
         new TextRun({ text: "ที่ ", bold: true, font: FONT, size: 40 }),
-        new TextRun({ text: toThaiDigits(set.memoNumber), font: FONT, size: BODY_SIZE }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE }),
+        new TextRun({
+          text: toThaiDigits(set.memoNumber),
+          font: FONT,
+          size: BODY_SIZE,
+          underline: {},
+        }),
+        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE, underline: {} }),
         new TextRun({ text: "วันที่ ", bold: true, font: FONT, size: 40 }),
         new TextRun({
           text: formatDateDoc(set.issueDate),
@@ -445,7 +450,7 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
           size: BODY_SIZE,
           underline: {},
         }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE }),
+        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE, underline: {} }),
       ],
     }),
     metaLine("เรื่อง", "ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ"),
@@ -613,6 +618,7 @@ export async function buildExchangeFormsDocx(
     alignment?: Align;
     size?: number;
     bold?: boolean;
+    line?: number;
   };
 
   const dateParts = (iso: string) => {
@@ -626,11 +632,16 @@ export async function buildExchangeFormsDocx(
 
   const textParagraph = (
     text: string,
-    options: { alignment?: Align; size?: number; bold?: boolean } = {},
+    options: { alignment?: Align; size?: number; bold?: boolean; line?: number } = {},
   ) =>
     new Paragraph({
       alignment: options.alignment,
-      spacing: { before: 0, after: 0, line: 480, lineRule: LineRuleType.EXACT },
+      spacing: {
+        before: 0,
+        after: 0,
+        line: options.line ?? 480,
+        lineRule: LineRuleType.EXACT,
+      },
       children: [
         new TextRun({
           text: text || " ",
@@ -660,17 +671,18 @@ export async function buildExchangeFormsDocx(
             (segment.dotted ? AlignmentType.CENTER : AlignmentType.LEFT),
           size: segment.size,
           bold: segment.bold,
+          line: segment.line,
         }),
       ],
     });
 
-  const makeRow = (segments: Segment[]) => {
+  const makeRow = (segments: Segment[], height = 480) => {
     const total = segments.reduce((sum, segment) => sum + segment.span, 0);
     if (total !== CONTENT_MM) {
       throw new Error(`exchange row width ${total}mm`);
     }
     return new TableRow({
-      height: { value: 480, rule: HeightRule.ATLEAST },
+      height: { value: height, rule: HeightRule.ATLEAST },
       children: segments.map(makeCell),
     });
   };
@@ -772,20 +784,27 @@ export async function buildExchangeFormsDocx(
         { text: "", span: 47, dotted: true },
         { text: "ผู้ขอแลกเปลี่ยน", span: 25 },
       ]),
-      makeRow([
-        { text: "", span: 78 },
-        {
-          text: `(${originalName})`,
-          span: 84,
-          alignment: AlignmentType.CENTER,
-        },
-      ]),
-      makeRow([
-        { text: "", span: 78 },
-        { text: "ตำแหน่ง", span: 14 },
-        { text: originalPosition, span: 61, dotted: true },
-        { text: "", span: 9 },
-      ]),
+      makeRow(
+        [
+          { text: "", span: 78 },
+          {
+            text: `(${originalName})`,
+            span: 84,
+            alignment: AlignmentType.CENTER,
+            line: 360,
+          },
+        ],
+        395,
+      ),
+      makeRow(
+        [
+          { text: "", span: 78 },
+          { text: "ตำแหน่ง", span: 14 },
+          { text: originalPosition, span: 61, dotted: true },
+          { text: "", span: 9 },
+        ],
+        565,
+      ),
       blankRow(),
       makeRow([
         { text: "", span: 78 },
@@ -793,20 +812,33 @@ export async function buildExchangeFormsDocx(
         { text: "", span: 47, dotted: true },
         { text: "ผู้ปฏิบัติงานแทน", span: 25 },
       ]),
-      makeRow([
-        { text: "", span: 78 },
-        {
-          text: `(${replacementName})`,
-          span: 84,
-          alignment: AlignmentType.CENTER,
-        },
-      ]),
-      makeRow([
-        { text: "", span: 78 },
-        { text: "ตำแหน่ง", span: 14 },
-        { text: replacementPosition, span: 61, dotted: true },
-        { text: "", span: 9 },
-      ]),
+      makeRow(
+        [
+          { text: "", span: 78 },
+          {
+            text: replacement
+              ? `(${replacementName})`
+              : `(${"          "})`,
+            span: 84,
+            alignment: AlignmentType.CENTER,
+            line: 360,
+          },
+        ],
+        395,
+      ),
+      makeRow(
+        [
+          { text: "", span: 78 },
+          { text: "ตำแหน่ง", span: 14 },
+          {
+            text: replacement ? replacementPosition : "",
+            span: 61,
+            dotted: true,
+          },
+          { text: "", span: 9 },
+        ],
+        565,
+      ),
       blankRow(),
       blankRow(),
       blankRow(),
@@ -824,17 +856,21 @@ export async function buildExchangeFormsDocx(
         { text: "", span: 61, dotted: true },
         { text: "", span: 46 },
       ]),
-      makeRow([
-        { text: "", span: 46 },
-        {
-          text: `(${groupHead.name})`,
-          span: 70,
-          alignment: AlignmentType.CENTER,
-        },
-        { text: "", span: 46 },
-      ]),
+      makeRow(
+        [
+          { text: "", span: 46 },
+          {
+            text: `(${groupHead.name})`,
+            span: 70,
+            alignment: AlignmentType.CENTER,
+            line: 360,
+          },
+          { text: "", span: 46 },
+        ],
+        395,
+      ),
       new TableRow({
-        height: { value: 480, rule: HeightRule.ATLEAST },
+        height: { value: 565, rule: HeightRule.ATLEAST },
         children: [
           makeCell({ text: "", span: 40 }),
           new TableCell({

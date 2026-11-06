@@ -13432,7 +13432,7 @@ body.workbench-open .toast-stack {
 }
 
 .exchange-doc__signature-name {
-  margin: 0;
+  margin: -1.5mm 0 1.5mm;
   text-align: center;
   line-height: 1.5;
   white-space: nowrap;
