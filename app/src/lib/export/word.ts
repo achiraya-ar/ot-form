@@ -402,7 +402,9 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
   const metaLine = (label: string, value: string) =>
     new Paragraph({
       spacing: { after: 20, line: 276 },
-      tabStops: [{ type: TabStopType.RIGHT, position: 8640, leader: LeaderType.DOT }],
+      tabStops: [
+        { type: TabStopType.RIGHT, position: 8640, leader: LeaderType.UNDERSCORE },
+      ],
       children: [
         new TextRun({ text: `${label} `, bold: true, font: FONT, size: 40 }),
         new TextRun({ text: value, font: FONT, size: BODY_SIZE, underline: {} }),
@@ -428,7 +430,7 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
       spacing: { after: 20, line: 276 },
       tabStops: [
         { type: TabStopType.LEFT, position: 4500 },
-        { type: TabStopType.RIGHT, position: 8640, leader: LeaderType.DOT },
+        { type: TabStopType.RIGHT, position: 8640, leader: LeaderType.UNDERSCORE },
       ],
       children: [
         new TextRun({ text: "ที่ ", bold: true, font: FONT, size: 40 }),
