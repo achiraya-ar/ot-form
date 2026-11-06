@@ -73,9 +73,9 @@ export function ExchangeRequestDocument({
 
         <p className="exchange-doc__field-line exchange-doc__indent">
           <span>ข้าพเจ้า</span>
-          <span className="exchange-doc__dots">{originalName}</span>
+          <span className="exchange-doc__dots is-name">{originalName}</span>
           <span>ตำแหน่ง</span>
-          <span className="exchange-doc__dots">{originalPosition}</span>
+          <span className="exchange-doc__dots is-position">{originalPosition}</span>
         </p>
 
         <p className="exchange-doc__field-line">
@@ -88,11 +88,11 @@ export function ExchangeRequestDocument({
           {shift && (
             <>
               <span>เวลา</span>
-              <span className="exchange-doc__dots is-time">
+              <span className="exchange-doc__dots is-time-start">
                 {formatTimeDoc(shift.start)}
               </span>
               <span>น. ถึง</span>
-              <span className="exchange-doc__dots is-time">
+              <span className="exchange-doc__dots is-time-end">
                 {formatTimeDoc(shift.end)}
               </span>
               <span>น.</span>
@@ -102,16 +102,16 @@ export function ExchangeRequestDocument({
 
         <p className="exchange-doc__field-line">
           <span>เนื่องจาก</span>
-          <span className="exchange-doc__dots">
-            {exchange.reason.trim() || "................................................"}
+          <span className="exchange-doc__dots is-reason">
+            {exchange.reason.trim()}
           </span>
         </p>
 
         <p className="exchange-doc__field-line">
           <span>โดยมอบให้</span>
-          <span className="exchange-doc__dots">{replacementName}</span>
+          <span className="exchange-doc__dots is-name">{replacementName}</span>
           <span>ตำแหน่ง</span>
-          <span className="exchange-doc__dots">{replacementPosition}</span>
+          <span className="exchange-doc__dots is-position">{replacementPosition}</span>
         </p>
 
         <p className="exchange-doc__line">
@@ -142,10 +142,14 @@ export function ExchangeRequestDocument({
           <span className="exchange-doc__dots" />
           <span>ผู้ปฏิบัติงานแทน</span>
         </p>
-        <p className="exchange-doc__signature-name">({replacementName})</p>
+        <p className="exchange-doc__signature-name">
+          {replacement ? `(${replacementName})` : `(${"\u00A0".repeat(28)})`}
+        </p>
         <p className="exchange-doc__signature-line is-position">
           <span>ตำแหน่ง</span>
-          <span className="exchange-doc__dots">{replacementPosition}</span>
+          <span className="exchange-doc__dots">
+            {replacement ? replacementPosition : ""}
+          </span>
         </p>
       </div>
 

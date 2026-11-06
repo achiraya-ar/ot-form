@@ -4,11 +4,12 @@ import {
   Document,
   HeightRule,
   ImageRun,
-  LeaderType,
+  LineRuleType,
   Packer,
   Paragraph,
   Table,
   TableCell,
+  TableLayoutType,
   TableRow,
   TabStopType,
   TextRun,
@@ -399,16 +400,95 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
   const director = set.signatories.director;
   const controller = set.signatories.controller;
 
-  const metaLine = (label: string, value: string) =>
-    new Paragraph({
-      spacing: { after: 20, line: 276 },
-      tabStops: [{ type: TabStopType.RIGHT, position: 8640, leader: LeaderType.DOT }],
+  const memoNoBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  const memoSolidBorder = { style: BorderStyle.SINGLE, size: 6, color: "000000" };
+  const memoNoBorders = {
+    top: memoNoBorder,
+    bottom: memoNoBorder,
+    left: memoNoBorder,
+    right: memoNoBorder,
+  };
+  const memoUnderlineBorders = {
+    ...memoNoBorders,
+    bottom: memoSolidBorder,
+  };
+  const memoHeaderCell = (
+    text: string,
+    span: number,
+    size: number,
+    options: { bold?: boolean; underline?: boolean } = {},
+  ) =>
+    new TableCell({
+      width: { size: convertMillimetersToTwip(span), type: WidthType.DXA },
+      columnSpan: span,
+      verticalAlign: VerticalAlign.BOTTOM,
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      borders: options.underline ? memoUnderlineBorders : memoNoBorders,
       children: [
-        new TextRun({ text: `${label} `, bold: true, font: FONT, size: 40 }),
-        new TextRun({ text: value, font: FONT, size: BODY_SIZE, underline: {} }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE }),
+        new Paragraph({
+          spacing: { before: 0, after: 0, line: 276 },
+          children: [
+            new TextRun({
+              text: text || " ",
+              font: FONT,
+              size,
+              bold: options.bold,
+            }),
+          ],
+        }),
       ],
     });
+  const memoHeader = new Table({
+    width: { size: convertMillimetersToTwip(160), type: WidthType.DXA },
+    columnWidths: Array.from({ length: 160 }, () =>
+      convertMillimetersToTwip(1),
+    ),
+    layout: TableLayoutType.FIXED,
+    borders: {
+      top: memoNoBorder,
+      bottom: memoNoBorder,
+      left: memoNoBorder,
+      right: memoNoBorder,
+      insideHorizontal: memoNoBorder,
+      insideVertical: memoNoBorder,
+    },
+    rows: [
+      new TableRow({
+        children: [
+          memoHeaderCell("ส่วนราชการ", 34, 40, { bold: true }),
+          memoHeaderCell(
+            `${set.org.hospitalName} ${set.org.groupName}`,
+            126,
+            BODY_SIZE,
+            { underline: true },
+          ),
+        ],
+      }),
+      new TableRow({
+        children: [
+          memoHeaderCell("ที่", 8, 40, { bold: true }),
+          memoHeaderCell(toThaiDigits(set.memoNumber), 70, BODY_SIZE, {
+            underline: true,
+          }),
+          memoHeaderCell("วันที่", 15, 40, { bold: true }),
+          memoHeaderCell(formatDateDoc(set.issueDate), 67, BODY_SIZE, {
+            underline: true,
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          memoHeaderCell("เรื่อง", 20, 40, { bold: true }),
+          memoHeaderCell(
+            "ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ",
+            140,
+            BODY_SIZE,
+            { underline: true },
+          ),
+        ],
+      }),
+    ],
+  });
 
   const children = [
     new Paragraph({
@@ -423,28 +503,7 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
         new TextRun({ text: "\tบันทึกข้อความ", bold: true, font: FONT, size: 58 }),
       ],
     }),
-    metaLine("ส่วนราชการ", `${set.org.hospitalName} ${set.org.groupName}`),
-    new Paragraph({
-      spacing: { after: 20, line: 276 },
-      tabStops: [
-        { type: TabStopType.LEFT, position: 4500 },
-        { type: TabStopType.RIGHT, position: 8640, leader: LeaderType.DOT },
-      ],
-      children: [
-        new TextRun({ text: "ที่ ", bold: true, font: FONT, size: 40 }),
-        new TextRun({ text: toThaiDigits(set.memoNumber), font: FONT, size: BODY_SIZE }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE }),
-        new TextRun({ text: "วันที่ ", bold: true, font: FONT, size: 40 }),
-        new TextRun({
-          text: formatDateDoc(set.issueDate),
-          font: FONT,
-          size: BODY_SIZE,
-          underline: {},
-        }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE }),
-      ],
-    }),
-    metaLine("เรื่อง", "ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ"),
+    memoHeader,
     new Paragraph({
       spacing: { before: 120, after: 100 },
       children: [
@@ -583,6 +642,35 @@ export async function buildExchangeFormsDocx(
   const groupHead = set.signatories.groupHead;
   const children: (Paragraph | Table)[] = [];
 
+  const GRID_MM = 1;
+  const CONTENT_MM = 162;
+  const noBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  const noBorders = {
+    top: noBorder,
+    bottom: noBorder,
+    left: noBorder,
+    right: noBorder,
+  };
+  const dottedBorder = { style: BorderStyle.DOTTED, size: 12, color: "000000" };
+  const tableNoBorders = {
+    top: noBorder,
+    bottom: noBorder,
+    left: noBorder,
+    right: noBorder,
+    insideHorizontal: noBorder,
+    insideVertical: noBorder,
+  };
+  type Align = (typeof AlignmentType)[keyof typeof AlignmentType];
+  type Segment = {
+    text?: string;
+    span: number;
+    dotted?: boolean;
+    alignment?: Align;
+    size?: number;
+    bold?: boolean;
+    line?: number;
+  };
+
   const dateParts = (iso: string) => {
     const date = parseIsoDate(iso);
     return {
@@ -591,6 +679,65 @@ export async function buildExchangeFormsDocx(
       year: toThaiDigits(date.getFullYear() + 543),
     };
   };
+
+  const textParagraph = (
+    text: string,
+    options: { alignment?: Align; size?: number; bold?: boolean; line?: number } = {},
+  ) =>
+    new Paragraph({
+      alignment: options.alignment,
+      spacing: {
+        before: 0,
+        after: 0,
+        line: options.line ?? 480,
+        lineRule: LineRuleType.EXACT,
+      },
+      children: [
+        new TextRun({
+          text: text || " ",
+          font: FONT,
+          size: options.size ?? BODY_SIZE,
+          bold: options.bold,
+        }),
+      ],
+    });
+
+  const makeCell = (segment: Segment) =>
+    new TableCell({
+      width: {
+        size: convertMillimetersToTwip(segment.span * GRID_MM),
+        type: WidthType.DXA,
+      },
+      columnSpan: segment.span,
+      verticalAlign: VerticalAlign.BOTTOM,
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      borders: segment.dotted
+        ? { ...noBorders, bottom: dottedBorder }
+        : noBorders,
+      children: [
+        textParagraph(segment.text ?? "", {
+          alignment:
+            segment.alignment ??
+            (segment.dotted ? AlignmentType.CENTER : AlignmentType.LEFT),
+          size: segment.size,
+          bold: segment.bold,
+          line: segment.line,
+        }),
+      ],
+    });
+
+  const makeRow = (segments: Segment[], height = 480) => {
+    const total = segments.reduce((sum, segment) => sum + segment.span, 0);
+    if (total !== CONTENT_MM) {
+      throw new Error(`exchange row width ${total}mm`);
+    }
+    return new TableRow({
+      height: { value: height, rule: HeightRule.ATLEAST },
+      children: segments.map(makeCell),
+    });
+  };
+
+  const blankRow = () => makeRow([{ text: "", span: CONTENT_MM }]);
 
   exchanges.forEach((exchange, index) => {
     const original = getPerson(settings, exchange.staffId);
@@ -608,142 +755,246 @@ export async function buildExchangeFormsDocx(
       : "-";
     const requestDate = dateParts(exchange.requestDate);
     const exchangeDate = dateParts(exchange.date);
+    const groupHeadPosition = groupHead.position
+      .split("\n")
+      .filter(Boolean);
+    if (groupHeadPosition.length === 0) groupHeadPosition.push("");
 
-    if (index > 0) {
-      children.push(new Paragraph({ pageBreakBefore: true, children: [] }));
-    }
+    const rows: TableRow[] = [
+      makeRow([
+        { text: "", span: 99 },
+        { text: "วันที่", span: 7 },
+        { text: requestDate.day, span: 8, dotted: true },
+        { text: "เดือน", span: 9 },
+        { text: requestDate.month, span: 19, dotted: true },
+        { text: "พ.ศ.", span: 7 },
+        { text: requestDate.year, span: 13, dotted: true },
+      ]),
+      makeRow([
+        { text: "เรื่อง", span: 15 },
+        { text: "ขอแลกเปลี่ยนเวรปฏิบัติงาน", span: 147 },
+      ]),
+      makeRow([
+        { text: "เรียน", span: 15 },
+        { text: `ผู้อำนวยการ${set.org.hospitalName}`, span: 147 },
+      ]),
+      makeRow([
+        { text: "", span: 13 },
+        { text: "ข้าพเจ้า", span: 12 },
+        { text: originalName, span: 58, dotted: true },
+        { text: "ตำแหน่ง", span: 14 },
+        { text: originalPosition, span: 65, dotted: true },
+      ]),
+      makeRow([
+        { text: "ขอแลกเปลี่ยนเวรจาก วันที่", span: 40 },
+        { text: exchangeDate.day, span: 6, dotted: true },
+        { text: "เดือน", span: 10 },
+        { text: exchangeDate.month, span: 19, dotted: true },
+        { text: "พ.ศ.", span: 7 },
+        { text: exchangeDate.year, span: 16, dotted: true },
+        { text: "เวลา", span: 9 },
+        {
+          text: shift ? formatTimeDoc(shift.start) : "",
+          span: 18,
+          dotted: true,
+        },
+        { text: "น. ถึง", span: 9 },
+        {
+          text: shift ? formatTimeDoc(shift.end) : "",
+          span: 23,
+          dotted: true,
+        },
+        { text: "น.", span: 4 },
+        { text: "", span: 1 },
+      ]),
+      makeRow([
+        { text: "เนื่องจาก", span: 14 },
+        { text: exchange.reason.trim(), span: 148, dotted: true },
+      ]),
+      makeRow([
+        { text: "โดยมอบให้", span: 17 },
+        { text: replacementName, span: 58, dotted: true },
+        { text: "ตำแหน่ง", span: 14 },
+        { text: replacementPosition, span: 73, dotted: true },
+      ]),
+      makeRow([
+        { text: "ปฏิบัติงานแทนในเวรตามวันและเวลาดังกล่าว", span: CONTENT_MM },
+      ]),
+      makeRow([
+        {
+          text: "จึงเรียนมาเพื่อทราบ และพิจารณาอนุมัติ",
+          span: CONTENT_MM,
+          alignment: AlignmentType.CENTER,
+        },
+      ]),
+      blankRow(),
+      makeRow([
+        { text: "", span: 78 },
+        { text: "ลงชื่อ", span: 12 },
+        { text: "", span: 47, dotted: true },
+        { text: "ผู้ขอแลกเปลี่ยน", span: 25 },
+      ]),
+      makeRow(
+        [
+          { text: "", span: 78 },
+          {
+            text: `(${originalName})`,
+            span: 84,
+            alignment: AlignmentType.CENTER,
+            line: 360,
+          },
+        ],
+        395,
+      ),
+      makeRow(
+        [
+          { text: "", span: 78 },
+          { text: "ตำแหน่ง", span: 14 },
+          { text: originalPosition, span: 61, dotted: true },
+          { text: "", span: 9 },
+        ],
+        565,
+      ),
+      blankRow(),
+      makeRow([
+        { text: "", span: 78 },
+        { text: "ลงชื่อ", span: 12 },
+        { text: "", span: 47, dotted: true },
+        { text: "ผู้ปฏิบัติงานแทน", span: 25 },
+      ]),
+      makeRow(
+        [
+          { text: "", span: 78 },
+          {
+            text: replacement
+              ? `(${replacementName})`
+              : `(${" ".repeat(28)})`,
+            span: 84,
+            alignment: AlignmentType.CENTER,
+            line: 360,
+          },
+        ],
+        395,
+      ),
+      makeRow(
+        [
+          { text: "", span: 78 },
+          { text: "ตำแหน่ง", span: 14 },
+          {
+            text: replacement ? replacementPosition : "",
+            span: 61,
+            dotted: true,
+          },
+          { text: "", span: 9 },
+        ],
+        565,
+      ),
+      blankRow(),
+      blankRow(),
+      blankRow(),
+      makeRow([
+        {
+          text: "อนุญาต",
+          span: CONTENT_MM,
+          alignment: AlignmentType.CENTER,
+        },
+      ]),
+      blankRow(),
+      makeRow([
+        { text: "", span: 46 },
+        { text: "ลงชื่อ", span: 9 },
+        { text: "", span: 61, dotted: true },
+        { text: "", span: 46 },
+      ]),
+      makeRow(
+        [
+          { text: "", span: 46 },
+          {
+            text: `(${groupHead.name})`,
+            span: 70,
+            alignment: AlignmentType.CENTER,
+            line: 360,
+          },
+          { text: "", span: 46 },
+        ],
+        395,
+      ),
+      new TableRow({
+        height: { value: 565, rule: HeightRule.ATLEAST },
+        children: [
+          makeCell({ text: "", span: 40 }),
+          new TableCell({
+            width: {
+              size: convertMillimetersToTwip(82),
+              type: WidthType.DXA,
+            },
+            columnSpan: 82,
+            verticalAlign: VerticalAlign.BOTTOM,
+            margins: { top: 0, bottom: 0, left: 0, right: 0 },
+            borders: noBorders,
+            children: groupHeadPosition.map((line) =>
+              textParagraph(line, { alignment: AlignmentType.CENTER }),
+            ),
+          }),
+          makeCell({ text: "", span: 40 }),
+        ],
+      }),
+      makeRow([
+        { text: "", span: 46 },
+        { text: "วันที่", span: 7 },
+        { text: "", span: 9, dotted: true },
+        { text: "เดือน", span: 9 },
+        { text: "", span: 26, dotted: true },
+        { text: "พ.ศ.", span: 7 },
+        { text: "", span: 12, dotted: true },
+        { text: "", span: 46 },
+      ]),
+    ];
+
+    const table = new Table({
+      width: {
+        size: convertMillimetersToTwip(CONTENT_MM),
+        type: WidthType.DXA,
+      },
+      columnWidths: Array.from({ length: CONTENT_MM }, () =>
+        convertMillimetersToTwip(GRID_MM),
+      ),
+      layout: TableLayoutType.FIXED,
+      borders: tableNoBorders,
+      rows,
+    });
 
     children.push(
-      paragraph("ใบขอแลกเปลี่ยนเวรปฏิบัติงาน", {
+      new Paragraph({
+        pageBreakBefore: index > 0,
         alignment: AlignmentType.CENTER,
-        size: 40,
-        bold: true,
-      }),
-      paragraph(set.org.hospitalName, {
-        alignment: AlignmentType.RIGHT,
-        size: BODY_SIZE,
-        spacingBefore: 60,
-        rightIndent: 12,
-      }),
-      paragraph(
-        `วันที่ ${requestDate.day} เดือน ${requestDate.month} พ.ศ. ${requestDate.year}`,
-        {
-          alignment: AlignmentType.RIGHT,
-          size: BODY_SIZE,
-          spacingBefore: 20,
-          rightIndent: 12,
-        },
-      ),
-      new Paragraph({ spacing: { after: 160 }, children: [] }),
-      paragraph("เรื่อง   ขอแลกเปลี่ยนเวรปฏิบัติงาน", {
-        size: BODY_SIZE,
-      }),
-      paragraph(`เรียน   ผู้อำนวยการ${set.org.hospitalName}`, {
-        size: BODY_SIZE,
-        spacingBefore: 40,
-      }),
-      new Paragraph({ spacing: { after: 80 }, children: [] }),
-      paragraph(`ข้าพเจ้า ${originalName} ตำแหน่ง ${originalPosition}`, {
-        indentFirstLineMm: 12,
-        size: BODY_SIZE,
-      }),
-      paragraph(
-        `ขอแลกเปลี่ยนเวรจาก วันที่ ${exchangeDate.day} เดือน ${exchangeDate.month} พ.ศ. ${exchangeDate.year}${
-          shift
-            ? ` เวลา ${formatTimeDoc(shift.start)} น. ถึง ${formatTimeDoc(
-                shift.end,
-              )} น.`
-            : ""
-        }`,
-        { size: BODY_SIZE, spacingBefore: 20 },
-      ),
-      paragraph(
-        `เนื่องจาก ${
-          exchange.reason.trim() || "................................................"
-        }`,
-        { size: BODY_SIZE, spacingBefore: 20 },
-      ),
-      paragraph(
-        `โดยมอบให้ ${replacementName} ตำแหน่ง ${replacementPosition}`,
-        { size: BODY_SIZE, spacingBefore: 20 },
-      ),
-      paragraph("ปฏิบัติงานแทนในเวรตามวันและเวลาดังกล่าว", {
-        size: BODY_SIZE,
-        spacingBefore: 20,
-      }),
-      paragraph("จึงเรียนมาเพื่อทราบ และพิจารณาอนุมัติ", {
-        alignment: AlignmentType.CENTER,
-        size: BODY_SIZE,
-        spacingBefore: 120,
-      }),
-      new Paragraph({ spacing: { after: 220 }, children: [] }),
-      paragraph("ลงชื่อ....................................................ผู้ขอแลกเปลี่ยน", {
-        alignment: AlignmentType.RIGHT,
-        size: BODY_SIZE,
-      }),
-      paragraph(`(${originalName})`, {
-        alignment: AlignmentType.CENTER,
-        size: BODY_SIZE,
-        indentLeftMm: 48,
-        spacingBefore: 20,
-      }),
-      paragraph(`ตำแหน่ง ${originalPosition}`, {
-        alignment: AlignmentType.LEFT,
-        size: BODY_SIZE,
-        indentLeftMm: 48,
-        spacingBefore: 20,
-      }),
-      new Paragraph({ spacing: { after: 180 }, children: [] }),
-      paragraph("ลงชื่อ....................................................ผู้ปฏิบัติงานแทน", {
-        alignment: AlignmentType.RIGHT,
-        size: BODY_SIZE,
-      }),
-      paragraph(`(${replacementName})`, {
-        alignment: AlignmentType.CENTER,
-        size: BODY_SIZE,
-        indentLeftMm: 48,
-        spacingBefore: 20,
-      }),
-      paragraph(`ตำแหน่ง ${replacementPosition}`, {
-        alignment: AlignmentType.LEFT,
-        size: BODY_SIZE,
-        indentLeftMm: 48,
-        spacingBefore: 20,
-      }),
-      new Paragraph({ spacing: { after: 260 }, children: [] }),
-      paragraph("อนุญาต", {
-        alignment: AlignmentType.CENTER,
-        size: BODY_SIZE,
-        spacingBefore: 80,
-      }),
-      new Paragraph({ spacing: { after: 160 }, children: [] }),
-      paragraph("ลงชื่อ..............................................................", {
-        alignment: AlignmentType.RIGHT,
-        size: BODY_SIZE,
-      }),
-      paragraph(`(${groupHead.name})`, {
-        alignment: AlignmentType.CENTER,
-        size: BODY_SIZE,
-        indentLeftMm: 48,
-        spacingBefore: 20,
-      }),
-      ...groupHead.position
-        .split("\n")
-        .filter(Boolean)
-        .map((line) =>
-          paragraph(line, {
-            alignment: AlignmentType.LEFT,
-            size: BODY_SIZE,
-            indentLeftMm: 48,
-            spacingBefore: 10,
+        spacing: { before: 0, after: 0, line: 540, lineRule: LineRuleType.EXACT },
+        children: [
+          new TextRun({
+            text: "ใบขอแลกเปลี่ยนเวรปฏิบัติงาน",
+            font: FONT,
+            size: 36,
+            bold: true,
           }),
-        ),
-      paragraph("วันที่..........เดือน.............................พ.ศ...........", {
-        alignment: AlignmentType.LEFT,
-        size: BODY_SIZE,
-        indentLeftMm: 48,
-        spacingBefore: 20,
+        ],
       }),
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        spacing: {
+          before: convertMillimetersToTwip(2.5),
+          after: 0,
+          line: 480,
+          lineRule: LineRuleType.EXACT,
+        },
+        children: [
+          new TextRun({
+            text: set.org.hospitalName,
+            font: FONT,
+            size: BODY_SIZE,
+          }),
+        ],
+      }),
+      table,
     );
   });
 
@@ -765,9 +1016,9 @@ export async function buildExchangeFormsDocx(
             },
             margin: {
               top: convertMillimetersToTwip(12),
-              right: convertMillimetersToTwip(20),
-              bottom: convertMillimetersToTwip(10),
-              left: convertMillimetersToTwip(20),
+              right: convertMillimetersToTwip(22.8),
+              bottom: convertMillimetersToTwip(15),
+              left: convertMillimetersToTwip(25),
             },
           },
         },
