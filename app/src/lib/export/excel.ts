@@ -398,15 +398,16 @@ export async function buildAttendanceXlsx(
     pageRows += group.size;
   });
 
-  // If the last data page is too full for the signature, repeat the final
-  // date group on a fresh signature page.
+  // If the last data page is too full for the signature, start a new page
+  // before the final date group. The group is written only once, so the
+  // previous page and the signature page do not repeat the same day.
   const lastBreak = breaks.length > 0 ? breaks[breaks.length - 1] : 4;
   const lastPageRows = rowIndex - 1 - lastBreak;
   if (rows.length > 0 && lastPageRows > 18) {
-    const lastDate = rows[rows.length - 1].date;
-    const carryRows = rows.filter((row) => row.date === lastDate);
-    breaks.push(rowIndex - 1);
-    rowIndex = writeRows(rowIndex, carryRows);
+    const lastGroup = dateGroups[dateGroups.length - 1];
+    if (lastGroup && lastGroup.start > lastBreak + 1) {
+      breaks.push(lastGroup.start - 1);
+    }
   }
 
   if (breaks.length > 0) {

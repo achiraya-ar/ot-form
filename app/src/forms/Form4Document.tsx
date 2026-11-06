@@ -9,7 +9,6 @@ import {
 
 interface Form4Page {
   rows: Form4Row[];
-  carry: boolean;
 }
 
 function paginate(rows: Form4Row[]): Form4Page[] {
@@ -29,20 +28,22 @@ function paginate(rows: Form4Row[]): Form4Page[] {
     current.push(...group);
   }
   if (current.length > 0) dataPages.push(current);
-  if (dataPages.length === 0) return [{ rows: [], carry: false }];
+  if (dataPages.length === 0) return [{ rows: [] }];
 
-  const pages: Form4Page[] = dataPages.map((pageRows) => ({
-    rows: pageRows,
-    carry: false,
-  }));
+  const pages: Form4Page[] = dataPages.map((pageRows) => ({ rows: pageRows }));
 
-  // If the last page is too full for the signature, start a signature page and
-  // bring the final date's rows along so the signer can see what is being signed.
+  // If the last page is too full for the signature, move the final date's rows
+  // to a new last page so the signer can see what is being signed. Remove them
+  // from the previous page so the same day is not printed twice.
   const lastPage = pages[pages.length - 1];
   const lastDate = rows[rows.length - 1]?.date;
   if (lastPage.rows.length > 18 && lastDate) {
-    const carryRows = rows.filter((row) => row.date === lastDate);
-    pages.push({ rows: carryRows, carry: true });
+    const movedRows = lastPage.rows.filter((row) => row.date === lastDate);
+    const remainingRows = lastPage.rows.filter((row) => row.date !== lastDate);
+    if (movedRows.length > 0 && remainingRows.length > 0) {
+      lastPage.rows = remainingRows;
+      pages.push({ rows: movedRows });
+    }
   }
 
   return pages;
@@ -77,8 +78,6 @@ export function Form4Document({
                 {shortDepartment} {set.org.hospitalName} ประจำเดือน {monthLabel}
               </p>
             </div>
-
-            {page.carry && <p className="carry-note">ตารางต่อเนื่อง (วันสุดท้าย)</p>}
 
             <table className="doc-table doc-table--attendance">
               <colgroup>
