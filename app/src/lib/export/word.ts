@@ -818,7 +818,7 @@ export async function buildExchangeFormsDocx(
           {
             text: replacement
               ? `(${replacementName})`
-              : `(${"          "})`,
+              : `(${" ".repeat(28)})`,
             span: 84,
             alignment: AlignmentType.CENTER,
             line: 360,
