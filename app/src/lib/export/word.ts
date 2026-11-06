@@ -4,7 +4,6 @@ import {
   Document,
   HeightRule,
   ImageRun,
-  LeaderType,
   LineRuleType,
   Packer,
   Paragraph,
@@ -401,18 +400,95 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
   const director = set.signatories.director;
   const controller = set.signatories.controller;
 
-  const metaLine = (label: string, value: string) =>
-    new Paragraph({
-      spacing: { after: 20, line: 276 },
-      tabStops: [
-        { type: TabStopType.RIGHT, position: 8640, leader: LeaderType.UNDERSCORE },
-      ],
+  const memoNoBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+  const memoSolidBorder = { style: BorderStyle.SINGLE, size: 6, color: "000000" };
+  const memoNoBorders = {
+    top: memoNoBorder,
+    bottom: memoNoBorder,
+    left: memoNoBorder,
+    right: memoNoBorder,
+  };
+  const memoUnderlineBorders = {
+    ...memoNoBorders,
+    bottom: memoSolidBorder,
+  };
+  const memoHeaderCell = (
+    text: string,
+    span: number,
+    size: number,
+    options: { bold?: boolean; underline?: boolean } = {},
+  ) =>
+    new TableCell({
+      width: { size: convertMillimetersToTwip(span), type: WidthType.DXA },
+      columnSpan: span,
+      verticalAlign: VerticalAlign.BOTTOM,
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      borders: options.underline ? memoUnderlineBorders : memoNoBorders,
       children: [
-        new TextRun({ text: `${label} `, bold: true, font: FONT, size: 40 }),
-        new TextRun({ text: value, font: FONT, size: BODY_SIZE, underline: {} }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE, underline: {} }),
+        new Paragraph({
+          spacing: { before: 0, after: 0, line: 276 },
+          children: [
+            new TextRun({
+              text: text || " ",
+              font: FONT,
+              size,
+              bold: options.bold,
+            }),
+          ],
+        }),
       ],
     });
+  const memoHeader = new Table({
+    width: { size: convertMillimetersToTwip(160), type: WidthType.DXA },
+    columnWidths: Array.from({ length: 160 }, () =>
+      convertMillimetersToTwip(1),
+    ),
+    layout: TableLayoutType.FIXED,
+    borders: {
+      top: memoNoBorder,
+      bottom: memoNoBorder,
+      left: memoNoBorder,
+      right: memoNoBorder,
+      insideHorizontal: memoNoBorder,
+      insideVertical: memoNoBorder,
+    },
+    rows: [
+      new TableRow({
+        children: [
+          memoHeaderCell("ส่วนราชการ", 34, 40, { bold: true }),
+          memoHeaderCell(
+            `${set.org.hospitalName} ${set.org.groupName}`,
+            126,
+            BODY_SIZE,
+            { underline: true },
+          ),
+        ],
+      }),
+      new TableRow({
+        children: [
+          memoHeaderCell("ที่", 8, 40, { bold: true }),
+          memoHeaderCell(toThaiDigits(set.memoNumber), 70, BODY_SIZE, {
+            underline: true,
+          }),
+          memoHeaderCell("วันที่", 15, 40, { bold: true }),
+          memoHeaderCell(formatDateDoc(set.issueDate), 67, BODY_SIZE, {
+            underline: true,
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          memoHeaderCell("เรื่อง", 20, 40, { bold: true }),
+          memoHeaderCell(
+            "ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ",
+            140,
+            BODY_SIZE,
+            { underline: true },
+          ),
+        ],
+      }),
+    ],
+  });
 
   const children = [
     new Paragraph({
@@ -427,33 +503,7 @@ export async function buildMemoDocx(set: DocumentSet, settings: AppSettings) {
         new TextRun({ text: "\tบันทึกข้อความ", bold: true, font: FONT, size: 58 }),
       ],
     }),
-    metaLine("ส่วนราชการ", `${set.org.hospitalName} ${set.org.groupName}`),
-    new Paragraph({
-      spacing: { after: 20, line: 276 },
-      tabStops: [
-        { type: TabStopType.LEFT, position: 4500 },
-        { type: TabStopType.RIGHT, position: 8640, leader: LeaderType.UNDERSCORE },
-      ],
-      children: [
-        new TextRun({ text: "ที่ ", bold: true, font: FONT, size: 40 }),
-        new TextRun({
-          text: toThaiDigits(set.memoNumber),
-          font: FONT,
-          size: BODY_SIZE,
-          underline: {},
-        }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE, underline: {} }),
-        new TextRun({ text: "วันที่ ", bold: true, font: FONT, size: 40 }),
-        new TextRun({
-          text: formatDateDoc(set.issueDate),
-          font: FONT,
-          size: BODY_SIZE,
-          underline: {},
-        }),
-        new TextRun({ text: "\t", font: FONT, size: BODY_SIZE, underline: {} }),
-      ],
-    }),
-    metaLine("เรื่อง", "ขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ"),
+    memoHeader,
     new Paragraph({
       spacing: { before: 120, after: 100 },
       children: [
