@@ -73,6 +73,38 @@ export function renderNumberPattern(
     .replaceAll("{monthName}", THAI_MONTHS[values.month - 1]);
 }
 
+function normalizeSet(set: DocumentSet, settings: AppSettings): DocumentSet {
+  const staff =
+    Array.isArray(set.staff) && set.staff.length > 0
+      ? set.staff
+      : structuredClone(settings.staff);
+  const shifts =
+    Array.isArray(set.shifts) && set.shifts.length > 0
+      ? set.shifts
+      : structuredClone(settings.shifts);
+  const signatories = {
+    ...SETTINGS_DEFAULT.signatories,
+    ...(set.signatories ?? {}),
+  } as SignatoryMap;
+  const rateOverrides =
+    set.rateOverrides ??
+    Object.fromEntries(
+      staff
+        .filter((person) => set.staffIds.includes(person.id))
+        .map((person) => [person.id, person.ratePerHour]),
+    );
+
+  return {
+    ...set,
+    staff,
+    shifts,
+    exchange: { ...settings.exchange, ...(set.exchange ?? {}) },
+    signatories,
+    rateOverrides,
+    shiftExchanges: Array.isArray(set.shiftExchanges) ? set.shiftExchanges : [],
+  };
+}
+
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -84,12 +116,7 @@ function loadState(): AppState {
     return {
       settings,
       sets: Array.isArray(parsed.sets)
-        ? (parsed.sets as DocumentSet[]).map((set) => ({
-            ...set,
-            shiftExchanges: Array.isArray(set.shiftExchanges)
-              ? set.shiftExchanges
-              : [],
-          }))
+        ? (parsed.sets as DocumentSet[]).map((set) => normalizeSet(set, settings))
         : [],
       session: parsed.session ?? null,
     };
@@ -120,6 +147,12 @@ export function mergeSettings(input?: Partial<AppSettings>): AppSettings {
       ...(input.signatories ?? {}),
     } as SignatoryMap,
     numbering: migrateNumbering(input.numbering),
+    exchange: {
+      ...SETTINGS_DEFAULT.exchange,
+      ...(input.exchange ?? {}),
+      approverKey:
+        input.exchange?.approverKey === "director" ? "director" : "groupHead",
+    },
   };
 }
 
@@ -333,12 +366,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({
       ...prev,
       settings,
-      sets: (parsed.sets as DocumentSet[]).map((set) => ({
-        ...set,
-        shiftExchanges: Array.isArray(set.shiftExchanges)
-          ? set.shiftExchanges
-          : [],
-      })),
+      sets: (parsed.sets as DocumentSet[]).map((set) => normalizeSet(set, settings)),
     }));
   };
 

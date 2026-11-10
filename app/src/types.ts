@@ -39,6 +39,15 @@ export interface Signatory {
 
 export type SignatoryKey = "director" | "groupHead" | "controller" | "payer";
 
+/** ผู้มีอำนาจลงนามในใบขอแลกเปลี่ยนเวร */
+export type ExchangeApproverKey = "groupHead" | "director";
+
+export interface ExchangeSettings {
+  approverKey: ExchangeApproverKey;
+  /** ข้อความในช่องอนุมัติท้ายใบ เช่น "อนุญาต" */
+  approvalText: string;
+}
+
 export type SignatoryMap = Record<SignatoryKey, Signatory>;
 
 export interface DocumentNumbering {
@@ -54,6 +63,7 @@ export interface AppSettings {
   shifts: Shift[];
   signatories: SignatoryMap;
   numbering: DocumentNumbering;
+  exchange: ExchangeSettings;
 }
 
 export interface Assignment {
@@ -86,6 +96,8 @@ export interface ShiftExchange {
   reason: string;
   /** วันที่ยื่นคำขอ */
   requestDate: string;
+  /** วันที่อนุมัติท้ายใบ; เว้นว่างได้ */
+  approvalDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -110,6 +122,12 @@ export interface DocumentSet {
   /** Custom body text for the memo; empty means use the generated text. */
   memoBody?: string;
   staffIds: string[];
+  /** Snapshot of staff data used by this set; later Settings changes do not affect it. */
+  staff?: Person[];
+  /** Snapshot of shift definitions used by this set; later Settings changes do not affect it. */
+  shifts?: Shift[];
+  /** Snapshot of shift-exchange form settings for this set. */
+  exchange?: ExchangeSettings;
   assignments: Assignment[];
   attendance: Record<string, AttendanceRecord>;
   /** ใบขอแลกเปลี่ยนเวรที่แนบกับชุดเอกสารนี้ */

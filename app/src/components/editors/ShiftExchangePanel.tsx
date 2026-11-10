@@ -10,17 +10,16 @@ import {
   X,
 } from "lucide-react";
 import type { AppSettings, Assignment, AttendanceRecord, DocumentSet, ShiftExchange } from "../../types";
-import { Button, Field } from "../ui";
+import { Button, DateInput, Field } from "../ui";
 import { newId, personFullName } from "../../data/defaults";
 import {
   eligibleReplacementStaff,
-  getPerson,
-  getShift,
+  getSetPerson,
+  getSetShift,
 } from "../../lib/selectors";
 import {
   formatDateShortUi,
   formatTimeRangeUi,
-  todayIso,
   weekdayName,
 } from "../../lib/thai";
 
@@ -65,14 +64,14 @@ export function ShiftExchangePanel({
       })
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
-        const startA = getShift(settings, a.shiftId)?.start ?? "";
-        const startB = getShift(settings, b.shiftId)?.start ?? "";
+        const startA = getSetShift(set, settings, a.shiftId)?.start ?? "";
+        const startB = getSetShift(set, settings, b.shiftId)?.start ?? "";
         if (startA !== startB) return startA.localeCompare(startB);
         return a.staffId.localeCompare(b.staffId);
       })
       .map((assignment) => {
-        const person = getPerson(settings, assignment.staffId);
-        const shift = getShift(settings, assignment.shiftId);
+        const person = getSetPerson(set, settings, assignment.staffId);
+        const shift = getSetShift(set, settings, assignment.shiftId);
         return {
           value: `${assignment.date}|${assignment.staffId}|${assignment.shiftId}`,
           date: assignment.date,
@@ -120,7 +119,8 @@ export function ShiftExchangePanel({
       shiftId: assignment.shiftId,
       replacementStaffId: null,
       reason: "",
-      requestDate: todayIso(),
+      requestDate: assignment.date,
+      approvalDate: assignment.date,
       createdAt: now,
       updatedAt: now,
     });
@@ -139,7 +139,8 @@ export function ShiftExchangePanel({
       shiftId: first.shiftId,
       replacementStaffId: null,
       reason: "",
-      requestDate: todayIso(),
+      requestDate: first.date,
+      approvalDate: first.date,
       createdAt: now,
       updatedAt: now,
     });
@@ -147,7 +148,12 @@ export function ShiftExchangePanel({
 
   const startEdit = (exchange: ShiftExchange) => {
     setPrevious(exchange);
-    setDraft({ ...exchange });
+    const requestDate = exchange.requestDate || exchange.date;
+    setDraft({
+      ...exchange,
+      requestDate,
+      approvalDate: exchange.approvalDate ?? requestDate,
+    });
   };
 
   const cancelForm = () => {
@@ -157,11 +163,24 @@ export function ShiftExchangePanel({
 
   const changeAssignment = (value: string) => {
     const [date, staffId, shiftId] = value.split("|");
-    setDraft((current) =>
-      current
-        ? { ...current, date, staffId, shiftId, replacementStaffId: null }
-        : current,
-    );
+    setDraft((current) => {
+      if (!current) return current;
+      // Until the user changes a date manually, keep both document dates in
+      // sync with the selected shift date.
+      const requestFollowsShift =
+        !current.requestDate || current.requestDate === current.date;
+      const approvalFollowsShift =
+        !current.approvalDate || current.approvalDate === current.date;
+      return {
+        ...current,
+        date,
+        staffId,
+        shiftId,
+        replacementStaffId: null,
+        requestDate: requestFollowsShift ? date : current.requestDate,
+        approvalDate: approvalFollowsShift ? date : current.approvalDate,
+      };
+    });
   };
 
   const save = () => {
@@ -183,8 +202,8 @@ export function ShiftExchangePanel({
     () =>
       [...exchanges].sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
-        const startA = getShift(settings, a.shiftId)?.start ?? "";
-        const startB = getShift(settings, b.shiftId)?.start ?? "";
+        const startA = getSetShift(set, settings, a.shiftId)?.start ?? "";
+        const startB = getSetShift(set, settings, b.shiftId)?.start ?? "";
         return startA.localeCompare(startB);
       }),
     [exchanges, settings],
@@ -230,6 +249,36 @@ export function ShiftExchangePanel({
             >
               <X size={15} />
             </button>
+          </div>
+
+          <div className="form-grid form-grid--2">
+            <Field
+              label="วันที่ขอแลกเปลี่ยน (มุมขวาบน)"
+              hint="ค่าเริ่มต้นคือวันที่ของเวรที่ขอแลกเปลี่ยน"
+              required
+            >
+              <DateInput
+                value={draft.requestDate}
+                onChange={(value) =>
+                  setDraft((current) =>
+                    current ? { ...current, requestDate: value } : current,
+                  )
+                }
+              />
+            </Field>
+            <Field
+              label="วันที่อนุมัติ (ท้ายใบ)"
+              hint="ค่าเริ่มต้นเท่ากับวันที่ขอแลกเปลี่ยน; เปลี่ยนหรือเว้นว่างได้"
+            >
+              <DateInput
+                value={draft.approvalDate ?? ""}
+                onChange={(value) =>
+                  setDraft((current) =>
+                    current ? { ...current, approvalDate: value } : current,
+                  )
+                }
+              />
+            </Field>
           </div>
 
           <Field label="เวรที่ขอแลกเปลี่ยน" required>
@@ -320,11 +369,11 @@ export function ShiftExchangePanel({
       ) : (
         <div className="exchange-list">
           {sortedExchanges.map((exchange) => {
-            const original = getPerson(settings, exchange.staffId);
+            const original = getSetPerson(set, settings, exchange.staffId);
             const replacement = exchange.replacementStaffId
-              ? getPerson(settings, exchange.replacementStaffId)
+              ? getSetPerson(set, settings, exchange.replacementStaffId)
               : undefined;
-            const shift = getShift(settings, exchange.shiftId);
+            const shift = getSetShift(set, settings, exchange.shiftId);
             return (
               <article key={exchange.id} className="exchange-card">
                 <div className="exchange-card__date">

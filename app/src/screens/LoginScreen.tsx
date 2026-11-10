@@ -4,7 +4,7 @@ import { Mascot, type MascotMouth } from "../components/Brand";
 import { assetUrl } from "../components/ui";
 
 const PHRASES = [
-  "ค่าตอบแทน ตรวจสอบได้",
+  "ระบบชุดเอกสารค่าตอบแทน",
   "เอกสารครบ 5 ไฟล์ในที่เดียว",
   "เริ่มสร้างชุดเอกสารกันเลย",
   "เดี๋ยวช่วยจัดการให้นะคะ",

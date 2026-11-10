@@ -1,19 +1,22 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
+  ArrowLeftRight,
   Building2,
   Clock,
+  Download,
   FileArchive,
   FileText,
   Hash,
   Plus,
+  RotateCcw,
   Save,
   ShieldCheck,
   Trash2,
+  Upload,
   Users,
 } from "lucide-react";
-import type { AppSettings, Person, Shift } from "../types";
-import { renderNumberPattern, useApp } from "../lib/store";
+import type { AppSettings, ExchangeSettings, Person, Shift } from "../types";
+import { mergeSettings, renderNumberPattern, useApp } from "../lib/store";
 import { PageHeader } from "../components/AppShell";
 import {
   Badge,
@@ -25,6 +28,7 @@ import {
   useToast,
 } from "../components/ui";
 import { newId } from "../data/defaults";
+import { saveBlob } from "../lib/export/save";
 import {
   formatNumberUi,
   formatTimeRangeUi,
@@ -32,16 +36,67 @@ import {
 } from "../lib/thai";
 import { SignatoryFields } from "../components/editors/SignatoryFields";
 
-type Tab = "org" | "signatories" | "staff" | "shifts" | "numbering" | "backup";
+type Tab = "org" | "signatories" | "staff" | "shifts" | "numbering" | "exchange" | "backup";
 
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "org", label: "หน่วยงาน", icon: <Building2 size={15} /> },
-  { id: "signatories", label: "ผู้ลงนาม", icon: <ShieldCheck size={15} /> },
-  { id: "staff", label: "พนักงาน", icon: <Users size={15} /> },
-  { id: "shifts", label: "เวรและเวลา", icon: <Clock size={15} /> },
-  { id: "numbering", label: "เลขเอกสาร", icon: <Hash size={15} /> },
-  { id: "backup", label: "สำรองข้อมูล", icon: <FileArchive size={15} /> },
+const TABS: {
+  id: Tab;
+  label: string;
+  description: string;
+  group: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    id: "org",
+    label: "หน่วยงาน",
+    description: "ชื่อโรงพยาบาล จังหวัด และกลุ่มงาน",
+    group: "ข้อมูลหลัก",
+    icon: <Building2 size={16} />,
+  },
+  {
+    id: "signatories",
+    label: "ผู้ลงนาม",
+    description: "ผู้อำนวยการ ผู้ควบคุม และผู้จ่ายเงิน",
+    group: "ข้อมูลหลัก",
+    icon: <ShieldCheck size={16} />,
+  },
+  {
+    id: "staff",
+    label: "พนักงาน",
+    description: "รายชื่อและอัตราค่าตอบแทน",
+    group: "ข้อมูลหลัก",
+    icon: <Users size={16} />,
+  },
+  {
+    id: "shifts",
+    label: "เวรและเวลา",
+    description: "ช่วงเวลาปฏิบัติงานนอกเวลา",
+    group: "ข้อมูลหลัก",
+    icon: <Clock size={16} />,
+  },
+  {
+    id: "numbering",
+    label: "เลขเอกสาร",
+    description: "รูปแบบเลขที่และลำดับอัตโนมัติ",
+    group: "เอกสาร",
+    icon: <Hash size={16} />,
+  },
+  {
+    id: "exchange",
+    label: "ใบแลกเปลี่ยนเวร",
+    description: "ผู้อนุมัติและข้อความอนุมัติ",
+    group: "เอกสาร",
+    icon: <ArrowLeftRight size={16} />,
+  },
+  {
+    id: "backup",
+    label: "สำรองข้อมูล",
+    description: "สำรองข้อมูลและไฟล์ตั้งค่า",
+    group: "ระบบ",
+    icon: <FileArchive size={16} />,
+  },
 ];
+
+const TAB_GROUPS = ["ข้อมูลหลัก", "เอกสาร", "ระบบ"];
 
 export function SettingsScreen({ onBack }: { onBack: () => void }) {
   const { settings, sets, updateSettings, exportBackup, importBackup } = useApp();
@@ -49,21 +104,45 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
   const [tab, setTab] = useState<Tab>("org");
   const [draft, setDraft] = useState<AppSettings>(() => structuredClone(settings));
   const fileRef = useRef<HTMLInputElement>(null);
+  const settingsFileRef = useRef<HTMLInputElement>(null);
+  const isDirty = useMemo(
+    () => JSON.stringify(draft) !== JSON.stringify(settings),
+    [draft, settings],
+  );
+
+  const handleBack = () => {
+    if (
+      isDirty &&
+      !window.confirm("มีการแก้ไขที่ยังไม่บันทึก ต้องการออกจากหน้าตั้งค่าหรือไม่?")
+    ) {
+      return;
+    }
+    onBack();
+  };
+
+  const discardChanges = () => {
+    setDraft(structuredClone(settings));
+    notify("คืนค่าการแก้ไขที่ยังไม่บันทึกแล้ว", "info");
+  };
 
   const save = () => {
     if (!draft.org.hospitalName.trim()) {
+      setTab("org");
       notify("กรุณากรอกชื่อโรงพยาบาล", "error");
       return;
     }
     if (!draft.org.province.trim()) {
+      setTab("org");
       notify("กรุณากรอกจังหวัด", "error");
       return;
     }
     if (draft.staff.length === 0) {
+      setTab("staff");
       notify("ต้องมีพนักงานอย่างน้อย 1 คน", "error");
       return;
     }
     if (!draft.shifts.some((shift) => shift.active)) {
+      setTab("shifts");
       notify("ต้องมีช่วงเวรที่เปิดใช้งานอย่างน้อย 1 ช่วง", "error");
       return;
     }
@@ -72,6 +151,7 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
         (shift) => shift.active && (!shift.start || !shift.end || shift.name.trim() === ""),
       )
     ) {
+      setTab("shifts");
       notify("กรุณากรอกชื่อและเวลาเริ่ม–สิ้นสุดของช่วงเวรให้ครบ", "error");
       return;
     }
@@ -80,12 +160,23 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
         (person) => person.firstName.trim() === "" || person.lastName.trim() === "",
       )
     ) {
+      setTab("staff");
       notify("กรุณากรอกชื่อและนามสกุลพนักงานให้ครบ", "error");
       return;
     }
     updateSettings(() => structuredClone(draft));
     notify("บันทึกการตั้งค่าแล้ว");
   };
+
+  const updateExchange = (patch: Partial<ExchangeSettings>) => {
+    setDraft((prev) => ({
+      ...prev,
+      exchange: { ...prev.exchange, ...patch },
+    }));
+  };
+
+  const exchangeApprover =
+    draft.signatories[draft.exchange.approverKey] ?? draft.signatories.groupHead;
 
   const updateStaff = (id: string, patch: Partial<Person>) => {
     setDraft((prev) => ({
@@ -176,18 +267,79 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const handleExportSettings = async () => {
+    const payload = {
+      app: "ot-form",
+      kind: "settings",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings: structuredClone(draft),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    try {
+      await saveBlob(
+        blob,
+        `ot-form-settings-${new Date().toISOString().slice(0, 10)}.json`,
+      );
+      notify("ส่งออกการตั้งค่าแล้ว");
+    } catch (error) {
+      notify(
+        error instanceof Error ? error.message : "ส่งออกการตั้งค่าไม่สำเร็จ",
+        "error",
+      );
+    }
+  };
+
+  const handleSettingsImport = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as {
+        app?: string;
+        settings?: Partial<AppSettings>;
+      } & Partial<AppSettings>;
+      if (parsed.app && parsed.app !== "ot-form") {
+        throw new Error("ไฟล์นี้ไม่ใช่ไฟล์ของ OT-Form");
+      }
+      const input = parsed.settings ?? (parsed as Partial<AppSettings>);
+      if (
+        !input ||
+        typeof input !== "object" ||
+        !input.org ||
+        !Array.isArray(input.staff) ||
+        !Array.isArray(input.shifts) ||
+        !input.signatories
+      ) {
+        throw new Error("ไม่พบข้อมูลการตั้งค่าที่ถูกต้องในไฟล์");
+      }
+      setDraft(mergeSettings(input));
+      setTab("org");
+      notify("นำเข้าการตั้งค่าแล้ว ตรวจสอบข้อมูลและกดบันทึกการตั้งค่า");
+    } catch (error) {
+      notify(
+        error instanceof Error ? error.message : "นำเข้าการตั้งค่าไม่สำเร็จ",
+        "error",
+      );
+    }
+  };
+
   return (
     <div className="page page--settings">
       <PageHeader
-        back={{ label: "กลับหน้าหลัก", onClick: onBack }}
+        back={{ label: "กลับหน้าหลัก", onClick: handleBack }}
         eyebrow="ตั้งค่าระบบ"
-        title="ตั้งค่าข้อมูลหลักของ OT-Form"
-        description="ค่าที่นี่ใช้เป็นค่าเริ่มต้นของชุดเอกสารใหม่ และแก้ไขเฉพาะชุดได้ในหน้าเอกสาร"
+        title="ตั้งค่าข้อมูลหลัก"
+        description="จัดการข้อมูลหน่วยงาน ผู้ลงนาม พนักงาน และค่าเริ่มต้นของเอกสาร"
         actions={
           <>
-            <Button variant="secondary" onClick={onBack}>
-              <ArrowLeft size={16} /> ยกเลิก
-            </Button>
+            {isDirty && <Badge tone="gold">ยังไม่บันทึก</Badge>}
+            {isDirty && (
+              <Button variant="secondary" onClick={discardChanges}>
+                <RotateCcw size={16} /> คืนค่า
+              </Button>
+            )}
             <Button variant="primary" onClick={save}>
               <Save size={16} /> บันทึกการตั้งค่า
             </Button>
@@ -195,23 +347,39 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
         }
       />
 
-      <div className="settings-tabs" role="tablist">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === item.id}
-            className={`settings-tab ${tab === item.id ? "is-active" : ""}`}
-            onClick={() => setTab(item.id)}
-          >
-            {item.icon}
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <div className="settings-layout">
+        <aside className="settings-nav" role="tablist" aria-label="หมวดการตั้งค่า">
+          {TAB_GROUPS.map((group) => (
+            <div key={group} className="settings-nav__group">
+              <span className="settings-nav__label">{group}</span>
+              {TABS.filter((item) => item.group === group).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === item.id}
+                  className={`settings-nav__item ${tab === item.id ? "is-active" : ""}`}
+                  onClick={() => setTab(item.id)}
+                >
+                  <span className="settings-nav__icon">{item.icon}</span>
+                  <span className="settings-nav__text">
+                    <strong>{item.label}</strong>
+                    <small>{item.description}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ))}
+          <div className="settings-nav__note">
+            <strong>การนำไปใช้</strong>
+            <span>
+              ใช้เป็นค่าเริ่มต้นของชุดใหม่ ชุดเดิมแก้ไขได้ที่ “ข้อมูลชุด”
+              หรือหน้าของแต่ละเอกสาร โดยไม่ถูกเปลี่ยนย้อนหลัง
+            </span>
+          </div>
+        </aside>
 
-      <div className="settings-body">
+        <div className="settings-body">
         {tab === "org" && (
           <Card className="settings-card">
             <div className="settings-card__head">
@@ -330,6 +498,10 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
               value={draft.signatories}
               onChange={(signatories) => setDraft({ ...draft, signatories })}
             />
+            <p className="settings-hint">
+              ผู้อนุมัติใบแลกเปลี่ยนเวรเลือกได้ที่แท็บ “ใบแลกเปลี่ยนเวร”
+              โดยใช้ชื่อและตำแหน่งจากผู้อำนวยการหรือหัวหน้ากลุ่มงาน
+            </p>
           </Card>
         )}
 
@@ -606,6 +778,105 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
           </Card>
         )}
 
+        {tab === "exchange" && (
+          <>
+            <Card className="settings-card">
+              <div className="settings-card__head">
+                <div>
+                  <span className="eyebrow">ใบแลกเปลี่ยนเวร</span>
+                  <h2>ผู้อนุมัติและข้อความอนุมัติ</h2>
+                  <p>
+                    ใช้เป็นค่าเริ่มต้นของชุดใหม่
+                    แก้ไขเฉพาะชุดได้ที่หน้า “ข้อมูลชุด” ของแต่ละชุด
+                  </p>
+                </div>
+                <Badge tone="sky">ค่าเริ่มต้น</Badge>
+              </div>
+              <div className="form-grid form-grid--2">
+                <Field label="ผู้อนุมัติ" hint="ชื่อและตำแหน่งดึงจากแท็บผู้ลงนาม">
+                  <select
+                    className="input"
+                    value={draft.exchange.approverKey}
+                    onChange={(event) =>
+                      updateExchange({
+                        approverKey: event.target.value as ExchangeSettings["approverKey"],
+                      })
+                    }
+                  >
+                    <option value="groupHead">หัวหน้ากลุ่มงาน</option>
+                    <option value="director">ผู้อำนวยการ</option>
+                  </select>
+                </Field>
+                <Field label="ข้อความอนุมัติ" hint="ข้อความที่แสดงเหนือช่องลงชื่อผู้อนุมัติ">
+                  <input
+                    className="input"
+                    value={draft.exchange.approvalText}
+                    placeholder="อนุญาต"
+                    onChange={(event) =>
+                      updateExchange({ approvalText: event.target.value })
+                    }
+                  />
+                </Field>
+              </div>
+              <div className="exchange-approver">
+                <div>
+                  <span>ผู้ลงนามที่จะแสดงในใบ</span>
+                  <strong>{exchangeApprover.name || "ยังไม่ได้ระบุชื่อ"}</strong>
+                  <p>
+                    {exchangeApprover.position.split("\n").join(" ") ||
+                      "ยังไม่ได้ระบุตำแหน่ง"}
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setTab("signatories")}
+                >
+                  <ShieldCheck size={14} /> แก้ไขผู้ลงนาม
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="settings-card">
+              <div className="settings-card__head">
+                <div>
+                  <span className="eyebrow">ตัวอย่างข้อความ</span>
+                  <h2>ส่วนท้ายของใบแลกเปลี่ยนเวร</h2>
+                  <p>
+                    ข้อมูลผู้ขอ วันที่ เวร และผู้ปฏิบัติงานแทน
+                    จะกรอกเมื่อสร้างใบแต่ละครั้ง
+                  </p>
+                </div>
+                <FileText size={24} />
+              </div>
+              <div className="exchange-settings-preview">
+                <p>
+                  <span>เรียน</span> ผู้อำนวยการ
+                  {draft.org.hospitalName || "................................"}
+                </p>
+                <p>
+                  <span>เรื่อง</span> ขอแลกเปลี่ยนเวรปฏิบัติงาน
+                </p>
+                <div className="exchange-settings-preview__approval">
+                  <strong>{draft.exchange.approvalText.trim() || "อนุญาต"}</strong>
+                  <p>ลงชื่อ ........................................</p>
+                  <em>({exchangeApprover.name || "........................................"})</em>
+                  {exchangeApprover.position
+                    .split("\n")
+                    .filter(Boolean)
+                    .map((line) => (
+                      <small key={line}>{line}</small>
+                    ))}
+                </div>
+              </div>
+              <p className="settings-hint">
+                สร้างใบแลกเปลี่ยนเวรได้ที่หน้า “บันทึกการเข้างาน” → แท็บ
+                “ใบแลกเปลี่ยนเวร”
+              </p>
+            </Card>
+          </>
+        )}
+
         {tab === "backup" && (
           <div className="backup-grid">
             <Card className="settings-card">
@@ -654,28 +925,65 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
               </div>
             </Card>
 
-            <Card className="settings-card about-card">
+            <Card className="settings-card">
               <div className="settings-card__head">
                 <div>
-                  <span className="eyebrow">เกี่ยวกับโปรแกรม</span>
-                  <h2>OT-Form</h2>
-                  <p>เวอร์ชัน 0.1.0 · เอกสารค่าตอบแทนนอกเวลาราชการ</p>
+                  <span className="eyebrow">เฉพาะการตั้งค่า</span>
+                  <h2>นำเข้า/ส่งออกการตั้งค่า</h2>
+                  <p>
+                    คัดลอกหน่วยงาน ผู้ลงนาม พนักงาน เวร เลขเอกสาร
+                    และค่าใบแลกเปลี่ยนเวร โดยไม่รวมชุดเอกสาร
+                  </p>
+                </div>
+                <FileText size={24} />
+              </div>
+              <div className="backup-stats">
+                <div>
+                  <span>พนักงาน</span>
+                  <strong>{formatNumberUi(draft.staff.length)} คน</strong>
+                </div>
+                <div>
+                  <span>ช่วงเวร</span>
+                  <strong>{formatNumberUi(draft.shifts.length)} ช่วง</strong>
+                </div>
+                <div>
+                  <span>ผู้ลงนาม</span>
+                  <strong>{formatNumberUi(Object.keys(draft.signatories).length)} คน</strong>
                 </div>
               </div>
-              <p>
-                ออกแบบให้ทำงานในเครื่อง ไม่เชื่อมต่อ HOSxP และไม่เก็บข้อมูลผู้ป่วย
-                เหมาะสำหรับงานเอกสารของกลุ่มงานการแพทย์แผนไทย
+              <div className="backup-actions">
+                <Button variant="primary" onClick={handleExportSettings}>
+                  <Download size={16} /> ส่งออกการตั้งค่า
+                </Button>
+                <input
+                  ref={settingsFileRef}
+                  type="file"
+                  accept="application/json,.json"
+                  hidden
+                  onChange={(event) => {
+                    void handleSettingsImport(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+                <Button
+                  variant="secondary"
+                  onClick={() => settingsFileRef.current?.click()}
+                >
+                  <Upload size={16} /> นำเข้าการตั้งค่า
+                </Button>
+              </div>
+              <p className="settings-hint">
+                ส่งออกค่าตามที่แสดงอยู่ในหน้าตั้งค่า รวมการแก้ไขที่ยังไม่บันทึก
               </p>
+              <div className="backup-warning is-info">
+                การนำเข้าจะแสดงค่าในหน้าตั้งค่าให้ตรวจสอบก่อน
+                ยังไม่บันทึกจนกว่าจะกด “บันทึกการตั้งค่า”
+                และมีผลกับชุดใหม่เท่านั้น ชุดเดิมจะไม่ถูกเปลี่ยนย้อนหลัง
+              </div>
             </Card>
           </div>
         )}
-      </div>
-
-      <div className="settings-savebar">
-        <span>แก้ไขล่าสุดในหน้าตั้งค่า · อย่าลืมกดบันทึก</span>
-        <Button variant="primary" onClick={save}>
-          <Save size={16} /> บันทึกการตั้งค่า
-        </Button>
+        </div>
       </div>
 
     </div>

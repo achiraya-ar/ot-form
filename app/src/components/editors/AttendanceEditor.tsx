@@ -11,7 +11,7 @@ import { Button, Modal, TimeInput, useToast } from "../ui";
 import { ShiftExchangePanel } from "./ShiftExchangePanel";
 import { ExchangeRequestModal } from "./ExchangeRequestModal";
 import { assignmentKey, personFullName } from "../../data/defaults";
-import { exchangePaymentSummary, getSetStaff, getShift } from "../../lib/selectors";
+import { exchangePaymentSummary, getSetShift, getSetStaff } from "../../lib/selectors";
 import {
   formatBahtUi,
   formatDateShortUi,
@@ -28,7 +28,7 @@ function buildRecords(set: DocumentSet, settings: AppSettings) {
   for (const assignment of set.assignments) {
     const key = assignmentKey(assignment);
     if (!records[key]) {
-      const shift = getShift(settings, assignment.shiftId);
+      const shift = getSetShift(set, settings, assignment.shiftId);
       records[key] = {
         ...assignment,
         status: "present",
@@ -117,8 +117,8 @@ export function AttendanceEditor({
             name: personFullName(person),
             position: person.position,
             assignments: [...assignments].sort((a, b) => {
-              const startA = getShift(settings, a.shiftId)?.start ?? "";
-              const startB = getShift(settings, b.shiftId)?.start ?? "";
+              const startA = getSetShift(set, settings, a.shiftId)?.start ?? "";
+              const startB = getSetShift(set, settings, b.shiftId)?.start ?? "";
               return startA.localeCompare(startB);
             }),
           });
@@ -165,7 +165,7 @@ export function AttendanceEditor({
     let amount = 0;
     for (const assignment of set.assignments) {
       const record = records[assignmentKey(assignment)];
-      const shift = getShift(settings, assignment.shiftId);
+      const shift = getSetShift(set, settings, assignment.shiftId);
       const person = staff.find((item) => item.id === assignment.staffId);
       if (!record || record.status === "absent") {
         absent += 1;
@@ -202,7 +202,7 @@ export function AttendanceEditor({
 
   const setStatus = (assignment: Assignment, status: "present" | "absent") => {
     if (exchangedKeys.has(assignmentKey(assignment))) return;
-    const shift = getShift(settings, assignment.shiftId);
+    const shift = getSetShift(set, settings, assignment.shiftId);
     const current = records[assignmentKey(assignment)];
     update(assignment, {
       status,
@@ -267,7 +267,7 @@ export function AttendanceEditor({
       ) {
         const oldKey = assignmentKey(previous);
         const oldRecord = next[oldKey];
-        const oldShift = getShift(settings, previous.shiftId);
+        const oldShift = getSetShift(set, settings, previous.shiftId);
         if (oldRecord) {
           next[oldKey] = {
             ...oldRecord,
@@ -279,7 +279,7 @@ export function AttendanceEditor({
       }
 
       const key = assignmentKey(exchange);
-      const shift = getShift(settings, exchange.shiftId);
+      const shift = getSetShift(set, settings, exchange.shiftId);
       next[key] = {
         ...(next[key] ?? {
           date: exchange.date,
@@ -309,7 +309,7 @@ export function AttendanceEditor({
         const key = assignmentKey(exchange);
         const record = prev[key];
         if (!record) return prev;
-        const shift = getShift(settings, exchange.shiftId);
+        const shift = getSetShift(set, settings, exchange.shiftId);
         return {
           ...prev,
           [key]: {
@@ -330,7 +330,7 @@ export function AttendanceEditor({
       for (const assignment of set.assignments) {
         const key = assignmentKey(assignment);
         if (exchangedKeys.has(key)) continue;
-        const shift = getShift(settings, assignment.shiftId);
+        const shift = getSetShift(set, settings, assignment.shiftId);
         next[key] = {
           ...next[key],
           ...assignment,
@@ -349,7 +349,7 @@ export function AttendanceEditor({
       const next = { ...prev };
       for (const assignment of set.assignments) {
         const key = assignmentKey(assignment);
-        const shift = getShift(settings, assignment.shiftId);
+        const shift = getSetShift(set, settings, assignment.shiftId);
         next[key] = {
           ...next[key],
           ...assignment,
@@ -530,7 +530,7 @@ export function AttendanceEditor({
                               </div>
                               <div className="att-staff__chips">
                                 {staffGroup.assignments.map((assignment) => {
-                                  const shift = getShift(settings, assignment.shiftId);
+                                  const shift = getSetShift(set, settings, assignment.shiftId);
                                   const record = records[assignmentKey(assignment)];
                                   const absent = record?.status === "absent";
                                   const exchanged = exchangedKeys.has(
@@ -584,7 +584,7 @@ export function AttendanceEditor({
                             {editing && (
                               <div className="att-time-panel">
                                 {staffGroup.assignments.map((assignment) => {
-                                  const shift = getShift(settings, assignment.shiftId);
+                                  const shift = getSetShift(set, settings, assignment.shiftId);
                                   const record = records[assignmentKey(assignment)];
                                   if (!shift) return null;
                                   return (

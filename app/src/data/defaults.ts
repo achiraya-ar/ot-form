@@ -117,6 +117,10 @@ export const SETTINGS_DEFAULT: AppSettings = {
     nextOrder: 1,
     nextMemo: 1,
   },
+  exchange: {
+    approverKey: "groupHead",
+    approvalText: "อนุญาต",
+  },
 };
 
 export function newId(): string {
@@ -153,6 +157,9 @@ export function blankSet(settings: AppSettings): DocumentSet {
     orderNumber: "",
     memoNumber: "",
     staffIds: settings.staff.filter((s) => s.active).map((s) => s.id),
+    staff: structuredClone(settings.staff),
+    shifts: structuredClone(settings.shifts),
+    exchange: structuredClone(settings.exchange),
     assignments: [],
     attendance: {},
     shiftExchanges: [],

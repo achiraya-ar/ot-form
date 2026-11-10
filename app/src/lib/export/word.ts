@@ -25,9 +25,10 @@ import { personFullName } from "../../data/defaults";
 import {
   getDocumentShifts,
   getForm1Rows,
-  getPerson,
+  getSetExchangeSettings,
   getSetExchanges,
-  getShift,
+  getSetPerson,
+  getSetShift,
   memoBodyText,
   orderBodyOf,
   orderClosingOf,
@@ -639,7 +640,10 @@ export async function buildExchangeFormsDocx(
   settings: AppSettings,
 ) {
   const exchanges = getSetExchanges(set);
-  const groupHead = set.signatories.groupHead;
+  const exchangeSettings = getSetExchangeSettings(set, settings);
+  const approver =
+    set.signatories[exchangeSettings.approverKey] ?? set.signatories.groupHead;
+  const approvalText = exchangeSettings.approvalText.trim() || "อนุญาต";
   const children: (Paragraph | Table)[] = [];
 
   const GRID_MM = 1;
@@ -740,11 +744,11 @@ export async function buildExchangeFormsDocx(
   const blankRow = () => makeRow([{ text: "", span: CONTENT_MM }]);
 
   exchanges.forEach((exchange, index) => {
-    const original = getPerson(settings, exchange.staffId);
+    const original = getSetPerson(set, settings, exchange.staffId);
     const replacement = exchange.replacementStaffId
-      ? getPerson(settings, exchange.replacementStaffId)
+      ? getSetPerson(set, settings, exchange.replacementStaffId)
       : undefined;
-    const shift = getShift(settings, exchange.shiftId);
+    const shift = getSetShift(set, settings, exchange.shiftId);
     const originalName = original ? personFullName(original) : "-";
     const originalPosition = original
       ? original.position.split("\n").join(" ")
@@ -754,11 +758,14 @@ export async function buildExchangeFormsDocx(
       ? replacement.position.split("\n").join(" ")
       : "-";
     const requestDate = dateParts(exchange.requestDate);
+    const approvalDate = exchange.approvalDate
+      ? dateParts(exchange.approvalDate)
+      : null;
     const exchangeDate = dateParts(exchange.date);
-    const groupHeadPosition = groupHead.position
+    const approverPosition = approver.position
       .split("\n")
       .filter(Boolean);
-    if (groupHeadPosition.length === 0) groupHeadPosition.push("");
+    if (approverPosition.length === 0) approverPosition.push("");
 
     const rows: TableRow[] = [
       makeRow([
@@ -859,7 +866,7 @@ export async function buildExchangeFormsDocx(
       makeRow([
         { text: "", span: 78 },
         { text: "ลงชื่อ", span: 12 },
-        { text: "", span: 47, dotted: true },
+        { text: replacement ? "" : "-", span: 47, dotted: true },
         { text: "ผู้ปฏิบัติงานแทน", span: 25 },
       ]),
       makeRow(
@@ -868,7 +875,7 @@ export async function buildExchangeFormsDocx(
           {
             text: replacement
               ? `(${replacementName})`
-              : `(${" ".repeat(28)})`,
+              : `(${"\u00A0".repeat(14)}-${"\u00A0".repeat(14)})`,
             span: 84,
             alignment: AlignmentType.CENTER,
             line: 360,
@@ -881,7 +888,7 @@ export async function buildExchangeFormsDocx(
           { text: "", span: 78 },
           { text: "ตำแหน่ง", span: 14 },
           {
-            text: replacement ? replacementPosition : "",
+            text: replacement ? replacementPosition : "-",
             span: 61,
             dotted: true,
           },
@@ -894,7 +901,7 @@ export async function buildExchangeFormsDocx(
       blankRow(),
       makeRow([
         {
-          text: "อนุญาต",
+          text: approvalText,
           span: CONTENT_MM,
           alignment: AlignmentType.CENTER,
         },
@@ -910,7 +917,7 @@ export async function buildExchangeFormsDocx(
         [
           { text: "", span: 46 },
           {
-            text: `(${groupHead.name})`,
+            text: `(${approver.name})`,
             span: 70,
             alignment: AlignmentType.CENTER,
             line: 360,
@@ -932,7 +939,7 @@ export async function buildExchangeFormsDocx(
             verticalAlign: VerticalAlign.BOTTOM,
             margins: { top: 0, bottom: 0, left: 0, right: 0 },
             borders: noBorders,
-            children: groupHeadPosition.map((line) =>
+            children: approverPosition.map((line) =>
               textParagraph(line, { alignment: AlignmentType.CENTER }),
             ),
           }),
@@ -942,11 +949,11 @@ export async function buildExchangeFormsDocx(
       makeRow([
         { text: "", span: 46 },
         { text: "วันที่", span: 7 },
-        { text: "", span: 9, dotted: true },
+        { text: approvalDate?.day ?? "", span: 9, dotted: true },
         { text: "เดือน", span: 9 },
-        { text: "", span: 26, dotted: true },
+        { text: approvalDate?.month ?? "", span: 26, dotted: true },
         { text: "พ.ศ.", span: 7 },
-        { text: "", span: 12, dotted: true },
+        { text: approvalDate?.year ?? "", span: 12, dotted: true },
         { text: "", span: 46 },
       ]),
     ];

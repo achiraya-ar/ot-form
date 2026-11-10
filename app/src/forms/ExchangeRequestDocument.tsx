@@ -1,6 +1,6 @@
 import type { AppSettings, DocumentSet, ShiftExchange } from "../types";
 import { Paper } from "../components/PaperStage";
-import { getPerson, getShift } from "../lib/selectors";
+import { getSetExchangeSettings, getSetPerson, getSetShift } from "../lib/selectors";
 import { personFullName } from "../data/defaults";
 import {
   formatTimeDoc,
@@ -31,13 +31,19 @@ export function ExchangeRequestDocument({
   settings: AppSettings;
   exchange: ShiftExchange;
 }) {
-  const original = getPerson(settings, exchange.staffId);
+  const original = getSetPerson(set, settings, exchange.staffId);
   const replacement = exchange.replacementStaffId
-    ? getPerson(settings, exchange.replacementStaffId)
+    ? getSetPerson(set, settings, exchange.replacementStaffId)
     : undefined;
-  const shift = getShift(settings, exchange.shiftId);
-  const groupHead = set.signatories.groupHead;
+  const shift = getSetShift(set, settings, exchange.shiftId);
+  const exchangeSettings = getSetExchangeSettings(set, settings);
+  const approver =
+    set.signatories[exchangeSettings.approverKey] ?? set.signatories.groupHead;
+  const approvalText = exchangeSettings.approvalText.trim() || "อนุญาต";
   const requestDate = dateParts(exchange.requestDate);
+  const approvalDate = exchange.approvalDate
+    ? dateParts(exchange.approvalDate)
+    : null;
   const exchangeDate = dateParts(exchange.date);
   const originalName = original ? personFullName(original) : "-";
   const originalPosition = original ? inlinePosition(original.position) : "-";
@@ -139,29 +145,33 @@ export function ExchangeRequestDocument({
       <div className="exchange-doc__signature exchange-doc__signature--replacement">
         <p className="exchange-doc__signature-line">
           <span>ลงชื่อ</span>
-          <span className="exchange-doc__dots" />
+          <span className="exchange-doc__dots">
+            {replacement ? "" : "-"}
+          </span>
           <span>ผู้ปฏิบัติงานแทน</span>
         </p>
         <p className="exchange-doc__signature-name">
-          {replacement ? `(${replacementName})` : `(${"\u00A0".repeat(28)})`}
+          {replacement
+            ? `(${replacementName})`
+            : `(${"\u00A0".repeat(14)}-${"\u00A0".repeat(14)})`}
         </p>
         <p className="exchange-doc__signature-line is-position">
           <span>ตำแหน่ง</span>
           <span className="exchange-doc__dots">
-            {replacement ? replacementPosition : ""}
+            {replacement ? replacementPosition : "-"}
           </span>
         </p>
       </div>
 
-      <p className="exchange-doc__approve">อนุญาต</p>
+      <p className="exchange-doc__approve">{approvalText}</p>
 
       <div className="exchange-doc__signature exchange-doc__signature--approval">
         <p className="exchange-doc__signature-line">
           <span>ลงชื่อ</span>
           <span className="exchange-doc__dots" />
         </p>
-        <p className="exchange-doc__signature-name">({groupHead.name})</p>
-        {groupHead.position
+        <p className="exchange-doc__signature-name">({approver.name})</p>
+        {approver.position
           .split("\n")
           .filter(Boolean)
           .map((line) => (
@@ -171,11 +181,11 @@ export function ExchangeRequestDocument({
           ))}
         <p className="exchange-doc__signature-line is-date">
           <span>วันที่</span>
-          <span className="exchange-doc__dots is-day" />
+          <span className="exchange-doc__dots is-day">{approvalDate?.day}</span>
           <span>เดือน</span>
-          <span className="exchange-doc__dots is-month" />
+          <span className="exchange-doc__dots is-month">{approvalDate?.month}</span>
           <span>พ.ศ.</span>
-          <span className="exchange-doc__dots is-year" />
+          <span className="exchange-doc__dots is-year">{approvalDate?.year}</span>
         </p>
       </div>
     </Paper>

@@ -1,6 +1,7 @@
 import type { AppSettings, DocumentSet, ShiftExchange } from "../../types";
 import { personFullName } from "../../data/defaults";
 import { formatDateDoc } from "../../lib/thai";
+import { getSetPerson } from "../../lib/selectors";
 import { Button, Modal } from "../ui";
 import { ExchangeRequestDocument } from "../../forms/ExchangeRequestDocument";
 import { PaperStage } from "../PaperStage";
@@ -16,7 +17,7 @@ export function ExchangeRequestModal({
   exchange: ShiftExchange;
   onClose: () => void;
 }) {
-  const original = settings.staff.find((person) => person.id === exchange.staffId);
+  const original = getSetPerson(set, settings, exchange.staffId);
   return (
     <Modal
       open

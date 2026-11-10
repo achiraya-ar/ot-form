@@ -29,15 +29,60 @@ export function getShift(settings: AppSettings, id: string): Shift | undefined {
   return settings.shifts.find((shift) => shift.id === id);
 }
 
+/**
+ * Staff and shifts are snapshotted into each document set when it is created,
+ * so later changes in Settings do not rewrite finished documents. Old sets fall
+ * back to the global settings until they have been migrated.
+ */
+export function getSetPeople(set: DocumentSet, settings: AppSettings): Person[] {
+  return set.staff?.length ? set.staff : settings.staff;
+}
+
+export function getSetPerson(
+  set: DocumentSet,
+  settings: AppSettings,
+  id: string,
+): Person | undefined {
+  return (
+    getSetPeople(set, settings).find((person) => person.id === id) ??
+    settings.staff.find((person) => person.id === id)
+  );
+}
+
+export function getSetShiftPool(set: DocumentSet, settings: AppSettings): Shift[] {
+  return set.shifts?.length ? set.shifts : settings.shifts;
+}
+
+export function getSetShift(
+  set: DocumentSet,
+  settings: AppSettings,
+  id: string,
+): Shift | undefined {
+  return (
+    getSetShiftPool(set, settings).find((shift) => shift.id === id) ??
+    settings.shifts.find((shift) => shift.id === id)
+  );
+}
+
+export function getSetExchangeSettings(
+  set: DocumentSet,
+  settings: AppSettings,
+) {
+  return {
+    ...settings.exchange,
+    ...(set.exchange ?? {}),
+  };
+}
+
 export function getSetStaff(set: DocumentSet, settings: AppSettings): Person[] {
   return set.staffIds
-    .map((id) => getPerson(settings, id))
+    .map((id) => getSetPerson(set, settings, id))
     .filter((person): person is Person => Boolean(person));
 }
 
 export function getSetShifts(set: DocumentSet, settings: AppSettings): Shift[] {
   const ids = new Set(set.assignments.map((a) => a.shiftId));
-  return settings.shifts
+  return getSetShiftPool(set, settings)
     .filter((shift) => shift.active || ids.has(shift.id))
     .sort((a, b) => a.start.localeCompare(b.start));
 }
@@ -49,10 +94,12 @@ export function getSetShifts(set: DocumentSet, settings: AppSettings): Shift[] {
  */
 export function getDocumentShifts(set: DocumentSet, settings: AppSettings): Shift[] {
   const used = new Set(set.assignments.map((assignment) => assignment.shiftId));
-  const shifts = settings.shifts.filter((shift) => used.has(shift.id));
-  return (shifts.length > 0 ? shifts : settings.shifts.filter((shift) => shift.active)).sort(
-    (a, b) => a.start.localeCompare(b.start),
-  );
+  const shifts = getSetShiftPool(set, settings).filter((shift) => used.has(shift.id));
+  return (
+    shifts.length > 0
+      ? shifts
+      : getSetShiftPool(set, settings).filter((shift) => shift.active)
+  ).sort((a, b) => a.start.localeCompare(b.start));
 }
 
 /** "๑, ๓-๕, ๘" — consecutive selected days are compressed into ranges. */
@@ -162,7 +209,9 @@ function getMemoDateGroups(set: DocumentSet, settings: AppSettings): MemoDateGro
     ];
   }
 
-  const shiftById = new Map(settings.shifts.map((shift) => [shift.id, shift]));
+  const shiftById = new Map(
+    getSetShiftPool(set, settings).map((shift) => [shift.id, shift]),
+  );
   const groups = new Map<string, { shiftIds: string[]; dates: string[] }>();
   for (const date of [...byDate.keys()].sort()) {
     const shiftIds = [...(byDate.get(date) ?? [])].sort();
@@ -266,7 +315,7 @@ export function paidHoursFor(
   if (record?.timeIn && record?.timeOut) {
     return shiftHours(record.timeIn, record.timeOut);
   }
-  const shift = getShift(settings, assignment.shiftId);
+  const shift = getSetShift(set, settings, assignment.shiftId);
   return shift ? shiftHours(shift.start, shift.end) : 0;
 }
 
@@ -275,7 +324,7 @@ export function staffPayment(
   settings: AppSettings,
   staffId: string,
 ): { hours: number; amount: number; days: number } {
-  const person = getPerson(settings, staffId);
+  const person = getSetPerson(set, settings, staffId);
   if (!person) return { hours: 0, amount: 0, days: 0 };
   const assignments = set.assignments.filter((a) => a.staffId === staffId);
   const hours = assignments.reduce(
@@ -300,7 +349,7 @@ export function exchangePaidHours(
   exchange: ShiftExchange,
 ): number {
   if (!exchange.replacementStaffId) return 0;
-  const shift = getShift(settings, exchange.shiftId);
+  const shift = getSetShift(set, settings, exchange.shiftId);
   return shift ? shiftHours(shift.start, shift.end) : 0;
 }
 
@@ -310,7 +359,7 @@ export function exchangeAmount(
   exchange: ShiftExchange,
 ): number {
   const person = exchange.replacementStaffId
-    ? getPerson(settings, exchange.replacementStaffId)
+    ? getSetPerson(set, settings, exchange.replacementStaffId)
     : undefined;
   if (!person) return 0;
   const rate = set.rateOverrides?.[person.id] ?? person.ratePerHour;
@@ -347,7 +396,7 @@ export function eligibleReplacementStaff(
       .filter((assignment) => assignment.date === date)
       .map((assignment) => assignment.staffId),
   );
-  const targetShift = getShift(settings, shiftId);
+  const targetShift = getSetShift(set, settings, shiftId);
   return getSetStaff(set, settings).filter((person) => {
     if (person.id === originalStaffId) return false;
     if (assigned.has(person.id)) return false;
@@ -361,7 +410,7 @@ export function eligibleReplacementStaff(
     if (!targetShift) return existingReplacements.length === 0;
 
     return existingReplacements.every((exchange) => {
-      const otherShift = getShift(settings, exchange.shiftId);
+      const otherShift = getSetShift(set, settings, exchange.shiftId);
       if (!otherShift) return true;
       const overlaps =
         targetShift.start < otherShift.end &&
@@ -407,7 +456,7 @@ export function getForm1Rows(set: DocumentSet, settings: AppSettings): Form1Row[
             .filter((a) => a.shiftId === shift.id)
             .sort((a, b) => (staffOrder.get(a.staffId) ?? 0) - (staffOrder.get(b.staffId) ?? 0))
             .map((a) => {
-              const person = getPerson(settings, a.staffId);
+              const person = getSetPerson(set, settings, a.staffId);
               return person ? personFullName(person) : "";
             })
             .filter(Boolean),
@@ -425,7 +474,7 @@ export function getUsedShiftsForStaff(
   const shiftIds = new Set(
     set.assignments.filter((a) => a.staffId === staffId).map((a) => a.shiftId),
   );
-  return settings.shifts
+  return getSetShiftPool(set, settings)
     .filter((shift) => shiftIds.has(shift.id))
     .sort((a, b) => a.start.localeCompare(b.start));
 }
@@ -461,7 +510,9 @@ export function getForm3Rows(
     const shifts =
       usedShifts.length > 0
         ? usedShifts
-        : settings.shifts.filter((shift) => shift.active).slice(0, 1);
+        : getSetShiftPool(set, settings)
+            .filter((shift) => shift.active)
+            .slice(0, 1);
     const cells: Record<string, Record<string, string>> = {};
     for (let day = 1; day <= monthDays; day += 1) {
       const date = `${set.year - 543}-${String(set.month).padStart(2, "0")}-${String(
@@ -521,8 +572,8 @@ export function getForm4Rows(set: DocumentSet, settings: AppSettings): Form4Row[
       const staffDiff =
         (staffOrder.get(a.staffId) ?? 0) - (staffOrder.get(b.staffId) ?? 0);
       if (staffDiff !== 0) return staffDiff;
-      const shiftA = getShift(settings, a.shiftId);
-      const shiftB = getShift(settings, b.shiftId);
+      const shiftA = getSetShift(set, settings, a.shiftId);
+      const shiftB = getSetShift(set, settings, b.shiftId);
       return (shiftA?.start ?? "").localeCompare(shiftB?.start ?? "");
     });
     if (dateAssignments.length === 0) continue;
@@ -539,11 +590,11 @@ export function getForm4Rows(set: DocumentSet, settings: AppSettings): Form4Row[
     for (const staffId of set.staffIds) {
       const list = byStaff.get(staffId);
       if (!list?.length) continue;
-      const person = getPerson(settings, staffId);
+      const person = getSetPerson(set, settings, staffId);
       if (!person) continue;
       const staffSpan = list.length;
       list.forEach((assignment, index) => {
-        const shift = getShift(settings, assignment.shiftId);
+        const shift = getSetShift(set, settings, assignment.shiftId);
         if (!shift) return;
         const record = getAttendance(set, date, staffId, shift.id);
         const absent = record?.status === "absent";
@@ -570,16 +621,16 @@ export function getForm4Rows(set: DocumentSet, settings: AppSettings): Form4Row[
         (exchange) => exchange.date === date && exchange.replacementStaffId,
       )
       .sort((a, b) => {
-        const startA = getShift(settings, a.shiftId)?.start ?? "";
-        const startB = getShift(settings, b.shiftId)?.start ?? "";
+        const startA = getSetShift(set, settings, a.shiftId)?.start ?? "";
+        const startB = getSetShift(set, settings, b.shiftId)?.start ?? "";
         return startA.localeCompare(startB);
       });
 
     for (const exchange of replacementExchanges) {
-      const replacement = getPerson(settings, exchange.replacementStaffId as string);
-      const shift = getShift(settings, exchange.shiftId);
+      const replacement = getSetPerson(set, settings, exchange.replacementStaffId as string);
+      const shift = getSetShift(set, settings, exchange.shiftId);
       if (!replacement || !shift) continue;
-      const original = getPerson(settings, exchange.staffId);
+      const original = getSetPerson(set, settings, exchange.staffId);
       rows.push({
         key: `exchange|${exchange.id}`,
         date,
@@ -645,8 +696,8 @@ export function getForm5Rows(set: DocumentSet, settings: AppSettings): Form5Staf
   const replacements = getSetExchanges(set)
     .filter((exchange) => exchange.replacementStaffId)
     .map((exchange) => {
-      const person = getPerson(settings, exchange.replacementStaffId as string);
-      const shift = getShift(settings, exchange.shiftId);
+      const person = getSetPerson(set, settings, exchange.replacementStaffId as string);
+      const shift = getSetShift(set, settings, exchange.shiftId);
       if (!person || !shift) return null;
       const hours = shiftHours(shift.start, shift.end);
       const rate = set.rateOverrides?.[person.id] ?? person.ratePerHour;
@@ -739,7 +790,7 @@ export function absentCount(set: DocumentSet): number {
 
 export function assignmentHours(set: DocumentSet, settings: AppSettings): number {
   return set.assignments.reduce((sum, assignment) => {
-    const shift = getShift(settings, assignment.shiftId);
+    const shift = getSetShift(set, settings, assignment.shiftId);
     return sum + (shift ? shiftHours(shift.start, shift.end) : 0);
   }, 0);
 }

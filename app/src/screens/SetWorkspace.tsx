@@ -22,7 +22,7 @@ import type {
 } from "../types";
 import { isStepUnlocked, useApp } from "../lib/store";
 import { assignmentKey, personFullName } from "../data/defaults";
-import { getSetStaff, getShift, totalPayment } from "../lib/selectors";
+import { getSetShift, getSetStaff, totalPayment } from "../lib/selectors";
 import {
   formatBahtUi,
   formatNumberUi,
@@ -155,7 +155,7 @@ export function SetWorkspace({
     const next: Record<string, AttendanceRecord> = {};
     for (const assignment of assignments) {
       const key = assignmentKey(assignment);
-      const shift = getShift(settings, assignment.shiftId);
+      const shift = getSetShift(current, settings, assignment.shiftId);
       next[key] =
         current.attendance[key] ?? {
           ...assignment,
@@ -239,11 +239,20 @@ export function SetWorkspace({
     memoNumber: string;
     controllerId: string;
     org: DocumentSet["org"];
+    exchange: DocumentSet["exchange"];
+    staff: DocumentSet["staff"];
+    shifts: DocumentSet["shifts"];
   }) => {
-    const controller = staff.find((person) => person.id === patch.controllerId);
+    const controller = patch.staff?.find((person) => person.id === patch.controllerId);
     updateSet(set.id, (current) => ({
       ...current,
       ...patch,
+      staff: current.staff
+        ? current.staff.map(
+            (person) =>
+              patch.staff?.find((item) => item.id === person.id) ?? person,
+          )
+        : patch.staff,
       signatories: controller
         ? {
             ...current.signatories,

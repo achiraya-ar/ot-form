@@ -204,7 +204,7 @@ export function DashboardScreen({
     : query.trim()
       ? "ไม่พบชุดที่ค้นหา"
       : statusFilter === "in_progress"
-        ? "ไม่มีชุดที่กำลังทำในช่วงนี้"
+        ? "ชุดเอกสารในช่วงนี้เสร็จครบแล้ว"
         : statusFilter === "completed"
           ? "ไม่มีชุดที่เสร็จแล้วในช่วงนี้"
           : "ไม่มีชุดเอกสารในช่วงนี้";
@@ -216,8 +216,8 @@ export function DashboardScreen({
       ? "ลองใช้คำค้นอื่น หรือล้างคำค้น"
       : statusFilter === "in_progress"
         ? wholeYear
-          ? `ปี ${selectedYear} ยังไม่มีชุดที่กำลังทำ`
-          : `ช่วง ${periodLabel} ยังไม่มีชุดที่กำลังทำ`
+          ? `ปี ${selectedYear} ทำเสร็จครบทุกชุดแล้ว`
+          : `ช่วง ${periodLabel} ทำเสร็จครบทุกชุดแล้ว`
         : statusFilter === "completed"
           ? wholeYear
             ? `ปี ${selectedYear} ยังไม่มีชุดที่เสร็จแล้ว`
@@ -368,21 +368,29 @@ export function DashboardScreen({
             </div>
           </div>
 
-          <dl className="dash-overview__stats">
-            <div className="dash-metric dash-metric--progress">
-              <dt>กำลังทำ</dt>
-              <dd>
-                {formatNumberUi(summary.inProgress)}
-                <small>ชุด</small>
-              </dd>
-            </div>
-            <div className="dash-metric dash-metric--done">
-              <dt>เสร็จแล้ว</dt>
-              <dd>
-                {formatNumberUi(summary.completed)}
-                <small>ชุด</small>
-              </dd>
-            </div>
+          <dl
+            className={`dash-overview__stats ${
+              summary.inProgress === 0 ? "is-compact" : ""
+            }`}
+          >
+            {summary.inProgress > 0 && (
+              <>
+                <div className="dash-metric dash-metric--progress">
+                  <dt>กำลังทำ</dt>
+                  <dd>
+                    {formatNumberUi(summary.inProgress)}
+                    <small>ชุด</small>
+                  </dd>
+                </div>
+                <div className="dash-metric dash-metric--done">
+                  <dt>เสร็จแล้ว</dt>
+                  <dd>
+                    {formatNumberUi(summary.completed)}
+                    <small>ชุด</small>
+                  </dd>
+                </div>
+              </>
+            )}
             <div className="dash-metric">
               <dt>ชุดทั้งหมด</dt>
               <dd>
