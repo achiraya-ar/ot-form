@@ -1,6 +1,6 @@
 [package]
 name = "ot-form"
-version = "0.1.0"
+version = "1.69.1110"
 description = "OT-Form — บันทึกค่าตอบแทนนอกเวลาราชการ"
 authors = ["OT-Form"]
 edition = "2021"

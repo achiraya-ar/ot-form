@@ -1,7 +1,7 @@
 {
   "name": "ot-form",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.69.1110",
   "description": "OT-Form — บันทึกค่าตอบแทนนอกเวลาราชการ",
   "scripts": {
     "dev": "npm --prefix app run dev",
