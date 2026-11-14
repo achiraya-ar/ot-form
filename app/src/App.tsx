@@ -47,6 +47,7 @@ export default function App() {
         <CreateSetScreen
           onBack={home}
           onCreated={(set) => setRoute({ name: "set", setId: set.id, step: 1 })}
+          onOpenSettings={openSettings}
         />
       )}
       {route.name === "set" && (

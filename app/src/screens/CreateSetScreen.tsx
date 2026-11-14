@@ -15,6 +15,7 @@ import {
   Clock,
   FileText,
   Info,
+  Settings,
   Sparkles,
   UserCheck,
   Users,
@@ -24,7 +25,7 @@ import {
 import type { DocumentSet } from "../types";
 import { useApp } from "../lib/store";
 import { PageHeader } from "../components/AppShell";
-import { Button, Card, Field, useToast } from "../components/ui";
+import { Button, Card, EmptyState, Field, useToast } from "../components/ui";
 import { personFullName } from "../data/defaults";
 import {
   dateRange,
@@ -352,9 +353,11 @@ function ThaiDateField({
 export function CreateSetScreen({
   onBack,
   onCreated,
+  onOpenSettings,
 }: {
   onBack: () => void;
   onCreated: (set: DocumentSet) => void;
+  onOpenSettings: () => void;
 }) {
   const { settings, createSet } = useApp();
   const notify = useToast();
@@ -384,6 +387,7 @@ export function CreateSetScreen({
     return [...selectedDates].sort().filter((iso) => iso.startsWith(prefix));
   }, [dateMode, year, month, rangeStart, rangeEnd, selectedDates]);
 
+  const activeStaff = settings.staff.filter((person) => person.active);
   const selectedStaff = settings.staff.filter((person) => staffIds.includes(person.id));
   const autoTitle = `ค่าตอบแทนนอกเวลา ${THAI_MONTHS[month - 1]} ${year}`;
   const weekendCount = effectiveDates.filter(isWeekend).length;
@@ -780,73 +784,86 @@ export function CreateSetScreen({
                   </div>
                 </div>
 
-                <div className="staff-toolbar">
-                  <span>พนักงานที่ใช้งาน</span>
-                  <div>
-                    <Button size="sm" variant="soft" onClick={selectAllStaff}>
-                      เลือกทั้งหมด
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={clearStaff}>
-                      ล้าง
-                    </Button>
-                  </div>
-                </div>
+                {activeStaff.length === 0 ? (
+                  <EmptyState
+                    icon={<Users size={26} />}
+                    title="ยังไม่มีข้อมูลพนักงาน"
+                    description="เพิ่มพนักงาน ผู้ควบคุมการปฏิบัติงาน และช่วงเวรในหน้าตั้งค่า ก่อนเริ่มสร้างชุดเอกสาร"
+                    action={
+                      <Button variant="primary" onClick={onOpenSettings}>
+                        <Settings size={16} /> ไปที่หน้าตั้งค่า
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <>
+                    <div className="staff-toolbar">
+                      <span>พนักงานที่ใช้งาน</span>
+                      <div>
+                        <Button size="sm" variant="soft" onClick={selectAllStaff}>
+                          เลือกทั้งหมด
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={clearStaff}>
+                          ล้าง
+                        </Button>
+                      </div>
+                    </div>
 
-                <div className="staff-select-list">
-                  {settings.staff
-                    .filter((person) => person.active)
-                    .map((person) => {
-                      const checked = staffIds.includes(person.id);
-                      return (
-                        <button
-                          key={person.id}
-                          type="button"
-                          className={`staff-select ${checked ? "is-checked" : ""}`}
-                          aria-pressed={checked}
-                          onClick={() => toggleStaff(person.id)}
-                        >
-                          <span className="staff-select__check">
-                            {checked ? <Check size={14} /> : null}
-                          </span>
-                          <span className="staff-select__main">
-                            <strong>{personFullName(person)}</strong>
-                            <small>{person.position}</small>
-                          </span>
-                          <span className="staff-select__rate">
-                            ฿ {formatNumberUi(person.ratePerHour, 2)}/ชม.
-                          </span>
-                        </button>
-                      );
-                    })}
-                </div>
+                    <div className="staff-select-list">
+                      {activeStaff.map((person) => {
+                        const checked = staffIds.includes(person.id);
+                        return (
+                          <button
+                            key={person.id}
+                            type="button"
+                            className={`staff-select ${checked ? "is-checked" : ""}`}
+                            aria-pressed={checked}
+                            onClick={() => toggleStaff(person.id)}
+                          >
+                            <span className="staff-select__check">
+                              {checked ? <Check size={14} /> : null}
+                            </span>
+                            <span className="staff-select__main">
+                              <strong>{personFullName(person)}</strong>
+                              <small>{person.position}</small>
+                            </span>
+                            <span className="staff-select__rate">
+                              ฿ {formatNumberUi(person.ratePerHour, 2)}/ชม.
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                <div className="controller-card">
-                  <span className="controller-card__icon">
-                    <UserCheck size={18} />
-                  </span>
-                  <div className="controller-card__body">
-                    <Field label="ผู้ควบคุมการปฏิบัติงาน" required>
-                      <select
-                        className="input"
-                        value={controllerId}
-                        disabled={selectedStaff.length === 0}
-                        onChange={(event) => setControllerId(event.target.value)}
-                      >
-                        <option value="">
-                          {selectedStaff.length === 0
-                            ? "เลือกพนักงานก่อน"
-                            : "เลือกผู้ควบคุม"}
-                        </option>
-                        {selectedStaff.map((person) => (
-                          <option key={person.id} value={person.id}>
-                            {personFullName(person)} — {person.position}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <p>ผู้ควบคุมต้องเป็นหนึ่งในพนักงานที่เลือก</p>
-                  </div>
-                </div>
+                    <div className="controller-card">
+                      <span className="controller-card__icon">
+                        <UserCheck size={18} />
+                      </span>
+                      <div className="controller-card__body">
+                        <Field label="ผู้ควบคุมการปฏิบัติงาน" required>
+                          <select
+                            className="input"
+                            value={controllerId}
+                            disabled={selectedStaff.length === 0}
+                            onChange={(event) => setControllerId(event.target.value)}
+                          >
+                            <option value="">
+                              {selectedStaff.length === 0
+                                ? "เลือกพนักงานก่อน"
+                                : "เลือกผู้ควบคุม"}
+                            </option>
+                            {selectedStaff.map((person) => (
+                              <option key={person.id} value={person.id}>
+                                {personFullName(person)} — {person.position}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                        <p>ผู้ควบคุมต้องเป็นหนึ่งในพนักงานที่เลือก</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -862,7 +879,11 @@ export function CreateSetScreen({
                   ถัดไป: เลือกทีมงาน <ArrowRight size={16} />
                 </Button>
               ) : (
-                <Button variant="primary" onClick={submit}>
+                <Button
+                  variant="primary"
+                  onClick={submit}
+                  disabled={activeStaff.length === 0}
+                >
                   <Sparkles size={16} /> สร้างชุดเอกสาร
                 </Button>
               )}

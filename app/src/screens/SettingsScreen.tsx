@@ -177,6 +177,9 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
 
   const exchangeApprover =
     draft.signatories[draft.exchange.approverKey] ?? draft.signatories.groupHead;
+  const filledSignatoryCount = Object.values(draft.signatories).filter(
+    (person) => person.name.trim() !== "",
+  ).length;
 
   const updateStaff = (id: string, patch: Partial<Person>) => {
     setDraft((prev) => ({
@@ -893,14 +896,6 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
                   <span>ชุดเอกสาร</span>
                   <strong>{formatNumberUi(sets.length)} ชุด</strong>
                 </div>
-                <div>
-                  <span>พนักงาน</span>
-                  <strong>{formatNumberUi(draft.staff.length)} คน</strong>
-                </div>
-                <div>
-                  <span>ช่วงเวร</span>
-                  <strong>{formatNumberUi(draft.shifts.length)} ช่วง</strong>
-                </div>
               </div>
               <div className="backup-actions">
                 <Button variant="primary" onClick={exportBackup}>
@@ -937,20 +932,30 @@ export function SettingsScreen({ onBack }: { onBack: () => void }) {
                 </div>
                 <FileText size={24} />
               </div>
-              <div className="backup-stats">
-                <div>
-                  <span>พนักงาน</span>
-                  <strong>{formatNumberUi(draft.staff.length)} คน</strong>
+              {(draft.staff.length > 0 ||
+                draft.shifts.length > 0 ||
+                filledSignatoryCount > 0) && (
+                <div className="backup-stats">
+                  {draft.staff.length > 0 && (
+                    <div>
+                      <span>พนักงาน</span>
+                      <strong>{formatNumberUi(draft.staff.length)} คน</strong>
+                    </div>
+                  )}
+                  {draft.shifts.length > 0 && (
+                    <div>
+                      <span>ช่วงเวร</span>
+                      <strong>{formatNumberUi(draft.shifts.length)} ช่วง</strong>
+                    </div>
+                  )}
+                  {filledSignatoryCount > 0 && (
+                    <div>
+                      <span>ผู้ลงนาม</span>
+                      <strong>{formatNumberUi(filledSignatoryCount)} คน</strong>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span>ช่วงเวร</span>
-                  <strong>{formatNumberUi(draft.shifts.length)} ช่วง</strong>
-                </div>
-                <div>
-                  <span>ผู้ลงนาม</span>
-                  <strong>{formatNumberUi(Object.keys(draft.signatories).length)} คน</strong>
-                </div>
-              </div>
+              )}
               <div className="backup-actions">
                 <Button variant="primary" onClick={handleExportSettings}>
                   <Download size={16} /> ส่งออกการตั้งค่า

@@ -10,100 +10,24 @@ import type {
 } from "../types";
 
 export const ORG_DEFAULT: OrgInfo = {
-  hospitalName: "โรงพยาบาลสระโบสถ์",
-  province: "ลพบุรี",
-  department: "งานการแพทย์แผนไทย",
-  departmentShort: "งานแพทย์แผนไทย",
-  groupName: "กลุ่มงานการแพทย์แผนไทยและการแพทย์ทางเลือก",
-  ministryRef:
-    "คำสั่งกระทรวงสาธารณสุข ที่ สธ0202.3.7/ว79 ลงวันที่ 3 กุมภาพันธ์ 2566 เรื่องมอบหมายให้ข้าราชการเป็นผู้บังคับบัญชา",
-  lawRef:
-    "ข้อบังคับกระทรวงสาธารณสุข ว่าด้วยการจ่ายเงินค่าตอบแทนเจ้าหน้าที่ที่ปฏิบัติงานให้กับหน่วยงานบริการในสังกัดกระทรวงสาธารณสุข พ.ศ. 2566 ลงวันที่ 3 กุมภาพันธ์ พ.ศ.2566",
+  hospitalName: "",
+  province: "",
+  department: "",
+  departmentShort: "",
+  groupName: "",
+  ministryRef: "",
+  lawRef: "",
 };
 
-export const STAFF_DEFAULT: Person[] = [
-  {
-    id: "staff-anchirya",
-    prefix: "น.ส.",
-    firstName: "อชิรญาณ์",
-    lastName: "รมยศิริไทย",
-    position: "แพทย์แผนไทยปฏิบัติการ",
-    ratePerHour: 80,
-    active: true,
-  },
-  {
-    id: "staff-jirawan",
-    prefix: "น.ส.",
-    firstName: "จิรวรรณ",
-    lastName: "เจริญมา",
-    position: "แพทย์แผนไทย",
-    ratePerHour: 80,
-    active: true,
-  },
-  {
-    id: "staff-patcharin",
-    prefix: "น.ส.",
-    firstName: "พัชรินทร์",
-    lastName: "เสมเหลือง",
-    position: "พนักงานบันทึกข้อมูล",
-    ratePerHour: 41.25,
-    active: true,
-  },
-  {
-    id: "staff-thipwan",
-    prefix: "นาง",
-    firstName: "ทิพวัลย์",
-    lastName: "อินทร์จาด",
-    position: "ผู้ช่วยเหลือคนไข้",
-    ratePerHour: 41.25,
-    active: true,
-  },
-  {
-    id: "staff-thansuda",
-    prefix: "น.ส.",
-    firstName: "ธัญสุดา",
-    lastName: "ยงยุทธ",
-    position: "ผู้ช่วยเหลือคนไข้",
-    ratePerHour: 41.25,
-    active: true,
-  },
-];
+export const STAFF_DEFAULT: Person[] = [];
 
-export const SHIFTS_DEFAULT: Shift[] = [
-  {
-    id: "shift-morning",
-    name: "เช้า",
-    start: "06:30",
-    end: "08:30",
-    active: true,
-  },
-  {
-    id: "shift-evening",
-    name: "เย็น",
-    start: "16:30",
-    end: "18:30",
-    active: true,
-  },
-];
+export const SHIFTS_DEFAULT: Shift[] = [];
 
 export const SIGNATORIES_DEFAULT: SignatoryMap = {
-  director: {
-    name: "นายพงษ์จุมพฏ นิยมพฤกษ์",
-    position:
-      "นายแพทย์ชำนาญการ รักษาการในตำแหน่ง\nผู้อำนวยการโรงพยาบาลสระโบสถ์",
-  },
-  groupHead: {
-    name: "น.ส.อชิรญาณ์ รมยศิริไทย",
-    position: "หัวหน้ากลุ่มการแพทย์แผนไทยและการแพทย์ทางเลือก",
-  },
-  controller: {
-    name: "น.ส.อชิรญาณ์ รมยศิริไทย",
-    position: "แพทย์แผนไทยปฏิบัติการ",
-  },
-  payer: {
-    name: "นางสาววรรณฑิกา พรมไทย",
-    position: "เจ้าพนักงานการเงินและบัญชีชำนาญงาน",
-  },
+  director: { name: "", position: "" },
+  groupHead: { name: "", position: "" },
+  controller: { name: "", position: "" },
+  payer: { name: "", position: "" },
 };
 
 export const SETTINGS_DEFAULT: AppSettings = {
@@ -113,7 +37,7 @@ export const SETTINGS_DEFAULT: AppSettings = {
   signatories: SIGNATORIES_DEFAULT,
   numbering: {
     orderPattern: "......./{year}",
-    memoPattern: "ลบ0033.302/พิเศษ",
+    memoPattern: "",
     nextOrder: 1,
     nextMemo: 1,
   },

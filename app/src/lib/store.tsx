@@ -22,6 +22,26 @@ import {
 
 const STORAGE_KEY = "otform.state.v1";
 
+// Older builds started with sample hospital data. Clear it once when the app
+// still contains an untouched sample setup and no document sets.
+const LEGACY_SAMPLE_HOSPITAL = "โรงพยาบาลสระโบสถ์";
+const LEGACY_SAMPLE_STAFF_IDS = [
+  "staff-anchirya",
+  "staff-jirawan",
+  "staff-patcharin",
+  "staff-thipwan",
+  "staff-thansuda",
+];
+
+function isUntouchedSampleState(state: AppState): boolean {
+  if (state.sets.length > 0) return false;
+  if (state.settings.org.hospitalName !== LEGACY_SAMPLE_HOSPITAL) return false;
+  if (state.settings.staff.length !== LEGACY_SAMPLE_STAFF_IDS.length) return false;
+  return LEGACY_SAMPLE_STAFF_IDS.every((id) =>
+    state.settings.staff.some((person) => person.id === id),
+  );
+}
+
 export interface NewSetInput {
   month: number;
   year: number;
@@ -113,13 +133,21 @@ function loadState(): AppState {
     }
     const parsed = JSON.parse(raw) as Partial<AppState>;
     const settings = mergeSettings(parsed.settings);
-    return {
+    const state: AppState = {
       settings,
       sets: Array.isArray(parsed.sets)
         ? (parsed.sets as DocumentSet[]).map((set) => normalizeSet(set, settings))
         : [],
       session: parsed.session ?? null,
     };
+    if (isUntouchedSampleState(state)) {
+      return {
+        settings: structuredClone(SETTINGS_DEFAULT),
+        sets: [],
+        session: null,
+      };
+    }
+    return { ...state, session: null };
   } catch {
     return { settings: structuredClone(SETTINGS_DEFAULT), sets: [], session: null };
   }
@@ -158,7 +186,9 @@ export function mergeSettings(input?: Partial<AppSettings>): AppSettings {
 
 function persist(state: AppState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // Never keep a session across launches: the login screen is always shown
+    // when the app is opened again.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, session: null }));
   } catch (error) {
     console.error("Unable to persist OT-Form state", error);
   }

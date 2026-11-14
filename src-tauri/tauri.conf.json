@@ -3,7 +3,7 @@
   "productName": "OT-Form",
   "mainBinaryName": "OT-Form",
   "version": "1.69.1114",
-  "identifier": "com.otform.desktop",
+  "identifier": "com.ot-form",
   "build": {
     "beforeDevCommand": {
       "script": "npm run dev",
