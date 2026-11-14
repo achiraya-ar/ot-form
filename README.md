@@ -106,4 +106,4 @@ logo.svg                     โลโก้ต้นแบบธีม
 ## ไฟล์ที่สร้างแล้ว
 
 - `src-tauri/target/release/bundle/macos/OT-Form.app` — แอปสำหรับใช้งานบน macOS
-- `src-tauri/target/release/bundle/dmg/OT-Form_1.69.1110_aarch64.dmg` — ตัวติดตั้ง DMG
+- `src-tauri/target/release/bundle/dmg/OT-Form_1.69.1114_aarch64.dmg` — ตัวติดตั้ง DMG
