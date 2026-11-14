@@ -10,6 +10,7 @@ import {
 import {
   formatDateDocOfficial,
   formatDateShortDoc,
+  formatHoursDaysDoc,
   formatMonthYearDoc,
   formatNumberDoc,
   formatTimeDoc,
@@ -154,7 +155,7 @@ export async function buildScheduleXlsx(set: DocumentSet, settings: AppSettings)
   for (let day = 0; day < days; day += 1) {
     ws.getColumn(dayStart + day).width = day === 0 ? 5.6 : 2.1;
   }
-  ws.getColumn(totalCol).width = 5.6;
+  ws.getColumn(totalCol).width = 12;
   ws.getColumn(noteCol).width = 10.4;
 
   merge(ws, 1, 1, 1, lastCol);
@@ -199,7 +200,7 @@ export async function buildScheduleXlsx(set: DocumentSet, settings: AppSettings)
     size: 12,
     align: "center",
   });
-  applyCell(ws, 4, totalCol, "รวมวัน", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 4, totalCol, "รวมชม.(วัน)", { bold: true, size: 11, align: "center" });
   applyCell(ws, 4, noteCol, "หมายเหตุ", { bold: true, size: 11, align: "center" });
   for (let day = 1; day <= days; day += 1) {
     applyCell(ws, 5, dayStart + day - 1, toThaiDigits(day), {
@@ -228,8 +229,8 @@ export async function buildScheduleXlsx(set: DocumentSet, settings: AppSettings)
       { size: 12 },
     );
     applyCell(ws, rowIndex, 3, row.staff.position, { size: 12 });
-    applyCell(ws, rowIndex, totalCol, `${toThaiDigits(row.totalDays)} วัน`, {
-      size: 12,
+    applyCell(ws, rowIndex, totalCol, formatHoursDaysDoc(row.totalHours, row.totalDays), {
+      size: 10,
       align: "center",
     });
     applyCell(ws, rowIndex, noteCol, "", { size: 12 });
@@ -474,7 +475,7 @@ export async function buildPaymentXlsx(set: DocumentSet, settings: AppSettings) 
   for (let day = 0; day < days; day += 1) {
     ws.getColumn(dayStart + day).width = 2.1;
   }
-  ws.getColumn(totalCol).width = 5.6;
+  ws.getColumn(totalCol).width = 12;
   ws.getColumn(amountCol).width = 6.3;
   ws.getColumn(dateCol).width = 6.7;
   ws.getColumn(signCol).width = 10.4;
@@ -531,7 +532,7 @@ export async function buildPaymentXlsx(set: DocumentSet, settings: AppSettings) 
     size: 12,
     align: "center",
   });
-  applyCell(ws, 4, totalCol, "รวมวัน", { bold: true, size: 11, align: "center" });
+  applyCell(ws, 4, totalCol, "รวมชม.(วัน)", { bold: true, size: 11, align: "center" });
   applyCell(ws, 4, amountCol, "จำนวน\nเงิน (บาท)", {
     bold: true,
     size: 11,
@@ -589,8 +590,8 @@ export async function buildPaymentXlsx(set: DocumentSet, settings: AppSettings) 
       size: 14,
       align: "center",
     });
-    applyCell(ws, rowIndex, totalCol, `${toThaiDigits(row.totalDays)} วัน`, {
-      size: 12,
+    applyCell(ws, rowIndex, totalCol, formatHoursDaysDoc(row.totalHours, row.totalDays), {
+      size: 10,
       align: "center",
     });
     applyCell(ws, rowIndex, amountCol, formatNumberDoc(row.amount, 2), {

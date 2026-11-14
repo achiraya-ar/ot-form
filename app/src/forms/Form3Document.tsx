@@ -1,7 +1,13 @@
 import type { AppSettings, DocumentSet } from "../types";
 import { Paper } from "../components/PaperStage";
 import { getForm3Rows } from "../lib/selectors";
-import { formatDateDocOfficial, formatMonthYearDoc, getDaysInMonth, toThaiDigits } from "../lib/thai";
+import {
+  formatDateDocOfficial,
+  formatHoursDaysDoc,
+  formatMonthYearDoc,
+  getDaysInMonth,
+  toThaiDigits,
+} from "../lib/thai";
 
 function paginateRows<T extends { shifts: unknown[] }>(
   items: T[],
@@ -52,13 +58,13 @@ export function Form3Document({
           <table className="doc-table doc-table--schedule">
             <colgroup>
               <col style={{ width: "8mm" }} />
-              <col style={{ width: "31mm" }} />
+              <col style={{ width: "30mm" }} />
               <col style={{ width: "24mm" }} />
               {Array.from({ length: days }, (_, index) => (
-                <col key={index} style={{ width: "5.4mm" }} />
+                <col key={index} style={{ width: "5.2mm" }} />
               ))}
-              <col style={{ width: "12mm" }} />
-              <col style={{ width: "18mm" }} />
+              <col style={{ width: "20mm" }} />
+              <col style={{ width: "17mm" }} />
             </colgroup>
             <thead>
               <tr>
@@ -66,7 +72,7 @@ export function Form3Document({
                 <th rowSpan={2}>ชื่อ</th>
                 <th rowSpan={2}>ตำแหน่ง</th>
                 <th colSpan={days}>วันที่ปฏิบัติงานนอกเวลาราชการ</th>
-                <th rowSpan={2}>รวมวัน</th>
+                <th rowSpan={2}>รวมชม.(วัน)</th>
                 <th rowSpan={2}>หมายเหตุ</th>
               </tr>
               <tr>
@@ -121,7 +127,7 @@ export function Form3Document({
                         {shiftIndex === 0 && (
                           <>
                             <td rowSpan={rowSpan} className="center total-cell">
-                              {toThaiDigits(row.totalDays)} วัน
+                              {formatHoursDaysDoc(row.totalHours, row.totalDays)}
                             </td>
                             <td rowSpan={rowSpan} />
                           </>

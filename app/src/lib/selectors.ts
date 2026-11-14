@@ -535,13 +535,21 @@ export function getForm3Rows(
       }
     }
     const summary = staffPayment(set, settings, staff.id);
+    const totalHours = markAbsent
+      ? summary.hours
+      : Math.round(
+          staffAssignments.reduce((sum, assignment) => {
+            const shift = getSetShift(set, settings, assignment.shiftId);
+            return sum + (shift ? shiftHours(shift.start, shift.end) : 0);
+          }, 0) * 100,
+        ) / 100;
     return {
       staff,
       shifts,
       totalDays: markAbsent
         ? summary.days
         : new Set(staffAssignments.map((assignment) => assignment.date)).size,
-      totalHours: summary.hours,
+      totalHours,
       cells,
     };
   });

@@ -3,6 +3,7 @@ import { Paper } from "../components/PaperStage";
 import { getForm5Rows, totalPayment } from "../lib/selectors";
 import {
   formatDateDocOfficial,
+  formatHoursDaysDoc,
   formatMonthYearDoc,
   formatNumberDoc,
   getDaysInMonth,
@@ -78,17 +79,17 @@ export function Form5Document({
             <table className="doc-table doc-table--payment">
               <colgroup>
                 <col style={{ width: "7mm" }} />
-                <col style={{ width: "27mm" }} />
-                <col style={{ width: "20mm" }} />
+                <col style={{ width: "26mm" }} />
+                <col style={{ width: "19mm" }} />
                 <col style={{ width: "11mm" }} />
                 {Array.from({ length: days }, (_, index) => (
-                  <col key={index} style={{ width: "4.2mm" }} />
+                  <col key={index} style={{ width: "4mm" }} />
                 ))}
-                <col style={{ width: "10mm" }} />
-                <col style={{ width: "15mm" }} />
+                <col style={{ width: "20mm" }} />
+                <col style={{ width: "14mm" }} />
                 <col style={{ width: "13mm" }} />
                 <col style={{ width: "16mm" }} />
-                <col style={{ width: "12mm" }} />
+                <col style={{ width: "11mm" }} />
               </colgroup>
               <thead>
                 <tr>
@@ -101,7 +102,7 @@ export function Form5Document({
                     ตอบแทน
                   </th>
                   <th colSpan={days}>วันที่ปฏิบัติงานนอกเวลาราชการ</th>
-                  <th rowSpan={2}>รวมวัน</th>
+                  <th rowSpan={2}>รวมชม.(วัน)</th>
                   <th rowSpan={2}>
                     จำนวน
                     <br />
@@ -173,7 +174,7 @@ export function Form5Document({
                           {shiftIndex === 0 && (
                             <>
                               <td rowSpan={rowSpan} className="center total-cell">
-                                {toThaiDigits(row.totalDays)} วัน
+                                {formatHoursDaysDoc(row.totalHours, row.totalDays)}
                               </td>
                               <td rowSpan={rowSpan} className="center amount-cell">
                                 {formatNumberDoc(row.amount, 2)}

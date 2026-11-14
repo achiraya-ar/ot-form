@@ -355,6 +355,11 @@ export function formatNumberDoc(value: number, decimals = 2): string {
   return `${value < 0 ? "-" : ""}${toThaiDigits(`${withCommas}${trimmed}`)}`;
 }
 
+/** "๘ ชม.(๓วัน)" — hours and days combined for the summary columns. */
+export function formatHoursDaysDoc(hours: number, days: number): string {
+  return `${formatNumberDoc(hours, 2)} ชม.(${toThaiDigits(days)}วัน)`;
+}
+
 export function formatBahtDoc(value: number): string {
   return formatNumberDoc(value, 2);
 }
