@@ -22,26 +22,6 @@ import {
 
 const STORAGE_KEY = "otform.state.v1";
 
-// Older builds started with sample hospital data. Clear it once when the app
-// still contains an untouched sample setup and no document sets.
-const LEGACY_SAMPLE_HOSPITAL = "โรงพยาบาลสระโบสถ์";
-const LEGACY_SAMPLE_STAFF_IDS = [
-  "staff-anchirya",
-  "staff-jirawan",
-  "staff-patcharin",
-  "staff-thipwan",
-  "staff-thansuda",
-];
-
-function isUntouchedSampleState(state: AppState): boolean {
-  if (state.sets.length > 0) return false;
-  if (state.settings.org.hospitalName !== LEGACY_SAMPLE_HOSPITAL) return false;
-  if (state.settings.staff.length !== LEGACY_SAMPLE_STAFF_IDS.length) return false;
-  return LEGACY_SAMPLE_STAFF_IDS.every((id) =>
-    state.settings.staff.some((person) => person.id === id),
-  );
-}
-
 export interface NewSetInput {
   month: number;
   year: number;
@@ -140,13 +120,6 @@ function loadState(): AppState {
         : [],
       session: parsed.session ?? null,
     };
-    if (isUntouchedSampleState(state)) {
-      return {
-        settings: structuredClone(SETTINGS_DEFAULT),
-        sets: [],
-        session: null,
-      };
-    }
     return { ...state, session: null };
   } catch {
     return { settings: structuredClone(SETTINGS_DEFAULT), sets: [], session: null };

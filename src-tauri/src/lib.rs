@@ -81,10 +81,30 @@ async fn save_export_folder(
     Ok(Some(target.to_string_lossy().to_string()))
 }
 
+// Keep webview storage in a stable data store so app updates and reinstalls
+// do not lose settings or document sets on macOS.
+// UUID: af7f2498-ccc4-4446-8073-88047454de00
+const DATA_STORE_IDENTIFIER: [u8; 16] = [
+    175, 127, 36, 152, 204, 196, 68, 70, 128, 115, 136, 4, 116, 84, 222, 0,
+];
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![save_export, save_export_folder])
+        .setup(|app| {
+            let window_config = app
+                .config()
+                .app
+                .windows
+                .first()
+                .cloned()
+                .expect("main window config is required");
+            tauri::WebviewWindowBuilder::from_config(app.handle(), &window_config)?
+                .data_store_identifier(DATA_STORE_IDENTIFIER)
+                .build()?;
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running OT-Form");
 }
