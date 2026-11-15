@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Download,
   FolderDown,
@@ -244,37 +245,39 @@ export function ExportModal({
         />
       </div>
 
-      {bulkFormat === "pdf" && hasSchedule && (
-        <div className="export-pdf-stage" aria-hidden="true">
-          <div ref={orderRef}>
-            <Form1Document set={set} settings={settings} />
-          </div>
-          <div ref={memoRef}>
-            <Form2Document set={set} settings={settings} />
-          </div>
-          <div ref={scheduleRef}>
-            <Form3Document set={set} settings={settings} />
-          </div>
-          <div ref={attendanceRef}>
-            <Form4Document set={set} settings={settings} />
-          </div>
-          <div ref={paymentRef}>
-            <Form5Document set={set} settings={settings} />
-          </div>
-          {exchanges.length > 0 && (
-            <div ref={exchangeRef}>
-              {exchanges.map((exchange) => (
-                <ExchangeRequestDocument
-                  key={exchange.id}
-                  set={set}
-                  settings={settings}
-                  exchange={exchange}
-                />
-              ))}
+      {bulkFormat === "pdf" && hasSchedule &&
+        createPortal(
+          <div className="export-pdf-stage" aria-hidden="true">
+            <div ref={orderRef}>
+              <Form1Document set={set} settings={settings} />
             </div>
-          )}
-        </div>
-      )}
+            <div ref={memoRef}>
+              <Form2Document set={set} settings={settings} />
+            </div>
+            <div ref={scheduleRef}>
+              <Form3Document set={set} settings={settings} />
+            </div>
+            <div ref={attendanceRef}>
+              <Form4Document set={set} settings={settings} />
+            </div>
+            <div ref={paymentRef}>
+              <Form5Document set={set} settings={settings} />
+            </div>
+            {exchanges.length > 0 && (
+              <div ref={exchangeRef}>
+                {exchanges.map((exchange) => (
+                  <ExchangeRequestDocument
+                    key={exchange.id}
+                    set={set}
+                    settings={settings}
+                    exchange={exchange}
+                  />
+                ))}
+              </div>
+            )}
+          </div>,
+          document.body,
+        )}
 
       {savedFolder && (
         <div className="export-saved">

@@ -100,9 +100,24 @@ pub fn run() {
                 .first()
                 .cloned()
                 .expect("main window config is required");
-            tauri::WebviewWindowBuilder::from_config(app.handle(), &window_config)?
+            let window = tauri::WebviewWindowBuilder::from_config(app.handle(), &window_config)?
                 .data_store_identifier(DATA_STORE_IDENTIFIER)
+                .center()
                 .build()?;
+
+            // Center inside the usable desktop area (excludes the taskbar) and
+            // keep the initial window fully on screen, even when the configured
+            // size is larger than the monitor.
+            let monitor = window.current_monitor()?.or(app.primary_monitor()?);
+            if let Some(monitor) = monitor {
+                let work_area = monitor.work_area();
+                let outer_size = window.outer_size()?;
+                let x = work_area.position.x
+                    + (work_area.size.width as i32 - outer_size.width as i32) / 2;
+                let y = work_area.position.y
+                    + (work_area.size.height as i32 - outer_size.height as i32) / 2;
+                window.set_position(tauri::PhysicalPosition::new(x, y))?;
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

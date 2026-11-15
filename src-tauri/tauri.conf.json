@@ -27,6 +27,7 @@
         "minHeight": 720,
         "resizable": true,
         "center": true,
+        "preventOverflow": { "width": 32, "height": 32 },
         "create": false
       }
     ],
