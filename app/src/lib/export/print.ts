@@ -6,10 +6,37 @@ function clonePapers(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(".paper")).map((paper) => {
     const clone = paper.cloneNode(true) as HTMLElement;
     clone.style.boxShadow = "none";
+    clone.style.textShadow = "none";
     clone.style.margin = "0";
     clone.style.zoom = "1";
+    clone.querySelectorAll<HTMLElement>("*").forEach((element) => {
+      element.style.textShadow = "none";
+    });
     return clone;
   });
+}
+
+async function waitForImages(container: HTMLElement): Promise<void> {
+  const images = Array.from(container.querySelectorAll("img"));
+  await Promise.all(
+    images.map(
+      (image) =>
+        new Promise<void>((resolve) => {
+          if (image.complete) {
+            resolve();
+            return;
+          }
+          const done = () => {
+            image.removeEventListener("load", done);
+            image.removeEventListener("error", done);
+            resolve();
+          };
+          image.addEventListener("load", done);
+          image.addEventListener("error", done);
+          window.setTimeout(done, 10000);
+        }),
+    ),
+  );
 }
 
 function collectStyles(): string {
@@ -79,6 +106,7 @@ export async function buildPdf(
   orientation: Orientation,
 ): Promise<Blob | null> {
   await document.fonts.ready;
+  await waitForImages(container);
   const papers = clonePapers(container);
   if (papers.length === 0) return null;
 
@@ -116,7 +144,24 @@ export async function buildPdf(
       });
       const image = canvas.toDataURL("image/jpeg", 0.95);
       if (index > 0) pdf.addPage();
-      pdf.addImage(image, "JPEG", 0, 0, pageWidth, pageHeight);
+
+      // Keep the captured page's proportions. A document can be slightly taller
+      // or shorter than A4 depending on the font/line wrapping; stretching the
+      // image to the full page made the whole form look squashed.
+      const sourceRatio = canvas.width / canvas.height;
+      const pageRatio = pageWidth / pageHeight;
+      let drawWidth = pageWidth;
+      let drawHeight = pageHeight;
+      let offsetX = 0;
+      let offsetY = 0;
+      if (sourceRatio > pageRatio) {
+        drawHeight = pageWidth / sourceRatio;
+        offsetY = (pageHeight - drawHeight) / 2;
+      } else {
+        drawWidth = pageHeight * sourceRatio;
+        offsetX = (pageWidth - drawWidth) / 2;
+      }
+      pdf.addImage(image, "JPEG", offsetX, offsetY, drawWidth, drawHeight);
     }
 
     return pdf.output("blob");
