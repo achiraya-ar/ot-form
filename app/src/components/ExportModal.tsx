@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Download,
   FolderDown,
@@ -8,16 +8,28 @@ import {
   Printer,
 } from "lucide-react";
 import type { AppSettings, DocumentSet } from "../types";
-import { Badge, Button, Modal, useToast } from "./ui";
+import { Badge, Button, Modal, Segmented, useToast } from "./ui";
 import { exportMemoDocx, exportOrderDocx } from "../lib/export/word";
 import {
   exportAttendanceXlsx,
   exportPaymentXlsx,
   exportScheduleXlsx,
 } from "../lib/export/excel";
-import { exportAllFolder } from "../lib/export/folder";
+import {
+  exportAllFolder,
+  exportAllPdf,
+  type PdfContainers,
+} from "../lib/export/folder";
+import { getSetExchanges } from "../lib/selectors";
+import { Form1Document } from "../forms/Form1Document";
+import { Form2Document } from "../forms/Form2Document";
+import { Form3Document } from "../forms/Form3Document";
+import { Form4Document } from "../forms/Form4Document";
+import { Form5Document } from "../forms/Form5Document";
+import { ExchangeRequestDocument } from "../forms/ExchangeRequestDocument";
 
 type Busy = string | null;
+type BulkFormat = "office" | "pdf";
 
 export function ExportModal({
   set,
@@ -30,8 +42,16 @@ export function ExportModal({
 }) {
   const notify = useToast();
   const [busy, setBusy] = useState<Busy>(null);
+  const [bulkFormat, setBulkFormat] = useState<BulkFormat>("office");
   const [savedFolder, setSavedFolder] = useState<string | null>(null);
   const hasSchedule = set.assignments.length > 0;
+  const exchanges = getSetExchanges(set);
+  const orderRef = useRef<HTMLDivElement>(null);
+  const memoRef = useRef<HTMLDivElement>(null);
+  const scheduleRef = useRef<HTMLDivElement>(null);
+  const attendanceRef = useRef<HTMLDivElement>(null);
+  const paymentRef = useRef<HTMLDivElement>(null);
+  const exchangeRef = useRef<HTMLDivElement>(null);
 
   const run = async (key: string, action: () => Promise<boolean>, success: string) => {
     setBusy(key);
@@ -46,17 +66,33 @@ export function ExportModal({
     }
   };
 
-  const handleFolder = async () => {
-    setBusy("folder");
+  const handleBulkExport = async () => {
+    setBusy("bulk");
     try {
-      const saved = await exportAllFolder(set, settings);
+      if (bulkFormat === "office") {
+        const saved = await exportAllFolder(set, settings);
+        if (saved) {
+          setSavedFolder(saved);
+          notify("บันทึกทั้ง 5 ไฟล์ลงโฟลเดอร์แล้ว");
+        }
+        return;
+      }
+
+      const saved = await exportAllPdf(set, {
+        order: orderRef.current,
+        memo: memoRef.current,
+        schedule: scheduleRef.current,
+        attendance: attendanceRef.current,
+        payment: paymentRef.current,
+        exchange: exchangeRef.current,
+      });
       if (saved) {
         setSavedFolder(saved);
-        notify("บันทึกทั้ง 5 ไฟล์ลงโฟลเดอร์แล้ว");
+        notify("บันทึกเอกสารทั้งชุดเป็น PDF แล้ว");
       }
     } catch (error) {
       console.error(error);
-      notify("บันทึกโฟลเดอร์ไม่สำเร็จ กรุณาลองใหม่", "error");
+      notify("ส่งออกเอกสารทั้งชุดไม่สำเร็จ กรุณาลองใหม่", "error");
     } finally {
       setBusy(null);
     }
@@ -120,7 +156,7 @@ export function ExportModal({
       open
       onClose={onClose}
       title="ส่งออกเอกสาร"
-      subtitle="เลือกไฟล์ที่ต้องการ ระบบจะสร้างตามข้อมูลล่าสุดของชุดนี้"
+      subtitle="เลือกไฟล์เดี่ยว หรือส่งออกทั้งชุดเป็น Word + Excel หรือ PDF"
       size="lg"
       footer={
         <>
@@ -129,13 +165,15 @@ export function ExportModal({
           </Button>
           <Button
             variant="primary"
-            onClick={handleFolder}
+            onClick={handleBulkExport}
             disabled={!hasSchedule || busy !== null}
           >
             <FolderDown size={16} />
-            {busy === "folder"
-              ? "กำลังสร้างโฟลเดอร์…"
-              : "ส่งออกเอกสารทั้งชุด"}
+            {busy === "bulk"
+              ? "กำลังสร้าง…"
+              : bulkFormat === "pdf"
+                ? "ส่งออกทั้งชุดเป็น PDF"
+                : "ส่งออกทั้งชุด (Word + Excel)"}
           </Button>
         </>
       }
@@ -180,6 +218,64 @@ export function ExportModal({
         })}
       </div>
 
+      <div className="export-bulk">
+        <div className="export-bulk__copy">
+          <strong>รูปแบบการส่งออกทั้งชุด</strong>
+          <span>เลือก Word + Excel สำหรับแก้ไข หรือ PDF สำหรับส่งและพิมพ์</span>
+        </div>
+        <Segmented
+          value={bulkFormat}
+          onChange={(value) => {
+            setBulkFormat(value);
+            setSavedFolder(null);
+          }}
+          options={[
+            {
+              value: "office",
+              label: "Word + Excel",
+              icon: <FileSpreadsheet size={14} />,
+            },
+            {
+              value: "pdf",
+              label: "PDF",
+              icon: <FileText size={14} />,
+            },
+          ]}
+        />
+      </div>
+
+      {bulkFormat === "pdf" && hasSchedule && (
+        <div className="export-pdf-stage" aria-hidden="true">
+          <div ref={orderRef}>
+            <Form1Document set={set} settings={settings} />
+          </div>
+          <div ref={memoRef}>
+            <Form2Document set={set} settings={settings} />
+          </div>
+          <div ref={scheduleRef}>
+            <Form3Document set={set} settings={settings} />
+          </div>
+          <div ref={attendanceRef}>
+            <Form4Document set={set} settings={settings} />
+          </div>
+          <div ref={paymentRef}>
+            <Form5Document set={set} settings={settings} />
+          </div>
+          {exchanges.length > 0 && (
+            <div ref={exchangeRef}>
+              {exchanges.map((exchange) => (
+                <ExchangeRequestDocument
+                  key={exchange.id}
+                  set={set}
+                  settings={settings}
+                  exchange={exchange}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {savedFolder && (
         <div className="export-saved">
           <FolderDown size={17} />
@@ -190,12 +286,16 @@ export function ExportModal({
         </div>
       )}
 
-      {Array.isArray(set.shiftExchanges) && set.shiftExchanges.length > 0 && (
+      {exchanges.length > 0 && (
         <div className="export-note">
           <FileText size={16} />
           <span>
-            มีใบแลกเปลี่ยนเวร {set.shiftExchanges.length} รายการ
-            ระบบจะรวมไฟล์ Word <strong>6 ใบขอแลกเปลี่ยนเวร</strong> ไว้ในโฟลเดอร์ด้วย
+            มีใบแลกเปลี่ยนเวร {exchanges.length} รายการ
+            ระบบจะรวมไฟล์{" "}
+            <strong>
+              {bulkFormat === "pdf" ? "PDF" : "Word"} 6 ใบขอแลกเปลี่ยนเวร
+            </strong>{" "}
+            ไว้ในชุดด้วย
           </span>
         </div>
       )}
@@ -203,8 +303,9 @@ export function ExportModal({
       <div className="export-note">
         <Printer size={16} />
         <span>
-          ต้องการไฟล์ PDF แบบไม่ต้องแก้ไข ใช้ปุ่ม <strong>PDF</strong> บนแถบตัวอย่างเอกสาร
-          ด้านบน ระบบจะสร้าง PDF ตามขนาดกระดาษ A4 ของแต่ละฟอร์ม
+          เลือก <strong>PDF</strong> ด้านบนเพื่อส่งออกทั้งชุด
+          หรือใช้ปุ่ม PDF บนแถบตัวอย่างเอกสารสำหรับส่งออกทีละไฟล์
+          ระบบจะสร้าง PDF ตามขนาดกระดาษ A4 ของแต่ละฟอร์ม
         </span>
       </div>
     </Modal>

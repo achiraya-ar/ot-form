@@ -74,14 +74,13 @@ ${collectStyles()}
   window.setTimeout(() => iframe.remove(), 2000);
 }
 
-export async function downloadPdf(
+export async function buildPdf(
   container: HTMLElement,
   orientation: Orientation,
-  filename: string,
-): Promise<boolean> {
+): Promise<Blob | null> {
   await document.fonts.ready;
   const papers = clonePapers(container);
-  if (papers.length === 0) return false;
+  if (papers.length === 0) return null;
 
   const host = document.createElement("div");
   host.style.position = "fixed";
@@ -120,11 +119,20 @@ export async function downloadPdf(
       pdf.addImage(image, "JPEG", 0, 0, pageWidth, pageHeight);
     }
 
-    const blob = pdf.output("blob");
-    return await saveBlob(blob, filename);
+    return pdf.output("blob");
   } finally {
     host.remove();
   }
+}
+
+export async function downloadPdf(
+  container: HTMLElement,
+  orientation: Orientation,
+  filename: string,
+): Promise<boolean> {
+  const blob = await buildPdf(container, orientation);
+  if (!blob) return false;
+  return saveBlob(blob, filename);
 }
 
 export function safeFileStem(input: string): string {

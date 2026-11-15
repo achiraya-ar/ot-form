@@ -3996,6 +3996,43 @@ img {
   gap: 7px;
 }
 
+.export-bulk {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 11px;
+  background: #ffffff;
+}
+
+.export-bulk__copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.export-bulk__copy strong {
+  font-size: 12.5px;
+}
+
+.export-bulk__copy span {
+  font-size: 10.5px;
+  color: var(--steel);
+}
+
+.export-pdf-stage {
+  position: fixed;
+  left: -20000px;
+  top: 0;
+  width: 1200px;
+  z-index: -1;
+  pointer-events: none;
+}
+
 .export-item {
   display: flex;
   align-items: center;
