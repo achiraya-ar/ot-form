@@ -4,6 +4,22 @@
    a touch of pink, soft clouds, and a document-first workspace.
    ────────────────────────────────────────────────────────────────────── */
 
+@font-face {
+  font-family: "TH Sarabun Embedded";
+  src: url("./assets/fonts/THSarabun.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TH Sarabun Embedded";
+  src: url("./assets/fonts/THSarabun-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
 
@@ -2772,7 +2788,7 @@ img {
 
 .doc-table th,
 .doc-table td {
-  border: 0.45mm solid #000;
+  border: 0.3mm solid #000;
   padding: 0.9mm 1.2mm;
   vertical-align: middle;
   word-wrap: break-word;
@@ -3069,7 +3085,7 @@ img {
 .doc-table--schedule .day-cell,
 .doc-table--payment .day-cell {
   position: relative;
-  font-size: 6.2pt;
+  font-size: 7.4pt;
   text-align: center;
   padding: 0;
   line-height: 1;
@@ -3092,7 +3108,7 @@ img {
 }
 
 .doc-table--schedule tbody tr {
-  height: 15mm;
+  height: 17mm;
 }
 
 .doc-table--payment tbody tr {
@@ -3105,6 +3121,10 @@ img {
   text-align: left;
   padding-left: 0.8mm;
   line-height: 1.12;
+}
+
+.doc-table--payment .name-cell {
+  font-size: 8.5pt;
 }
 
 .doc-table--schedule .position-cell,
@@ -3228,13 +3248,17 @@ img {
 }
 
 .doc-table--attendance {
-  font-size: 15pt;
+  font-size: 14pt;
   margin-top: 7mm;
 }
 
 .doc-table--attendance th {
-  font-size: 15pt;
+  font-size: 13pt;
   padding: 1mm 0.8mm;
+}
+
+.doc-table--attendance th:first-child {
+  font-size: 12pt;
 }
 
 .doc-table--attendance td {
@@ -3243,17 +3267,17 @@ img {
 }
 
 .doc-table--attendance .date-cell {
-  font-size: 14pt;
+  font-size: 13pt;
   text-align: center;
 }
 
 .doc-table--attendance .name-cell {
-  font-size: 15pt;
+  font-size: 13pt;
   text-align: center;
 }
 
 .doc-table--attendance .time-cell {
-  font-size: 15pt;
+  font-size: 14pt;
   white-space: nowrap;
   text-align: center;
 }
@@ -3265,7 +3289,7 @@ img {
 
 .doc-table--attendance .signature-cell {
   font-weight: 400;
-  font-size: 15pt;
+  font-size: 14pt;
   text-align: center;
 }
 
@@ -4072,6 +4096,25 @@ img {
 
 .export-item__meta {
   flex-shrink: 0;
+}
+
+.export-format-select {
+  flex-shrink: 0;
+  height: 30px;
+  max-width: 126px;
+  padding: 0 7px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--slate);
+  font-family: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.export-format-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .export-note {

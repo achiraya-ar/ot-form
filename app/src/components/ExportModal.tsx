@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   Download,
   FolderDown,
@@ -18,8 +18,8 @@ import {
 import {
   exportAllFolder,
   exportAllPdf,
-  type PdfContainers,
 } from "../lib/export/folder";
+import { downloadPdf } from "../lib/export/print";
 import { getSetExchanges } from "../lib/selectors";
 import { Form1Document } from "../forms/Form1Document";
 import { Form2Document } from "../forms/Form2Document";
@@ -30,6 +30,8 @@ import { ExchangeRequestDocument } from "../forms/ExchangeRequestDocument";
 
 type Busy = string | null;
 type BulkFormat = "office" | "pdf";
+type ExportFormat = "native" | "pdf";
+type ExportKey = "order" | "memo" | "schedule" | "attendance" | "payment";
 
 export function ExportModal({
   set,
@@ -42,7 +44,14 @@ export function ExportModal({
 }) {
   const notify = useToast();
   const [busy, setBusy] = useState<Busy>(null);
-  const [bulkFormat, setBulkFormat] = useState<BulkFormat>("office");
+  const [bulkFormat, setBulkFormat] = useState<BulkFormat>("pdf");
+  const [formats, setFormats] = useState<Record<ExportKey, ExportFormat>>({
+    order: "pdf",
+    memo: "pdf",
+    schedule: "pdf",
+    attendance: "pdf",
+    payment: "pdf",
+  });
   const [savedFolder, setSavedFolder] = useState<string | null>(null);
   const hasSchedule = set.assignments.length > 0;
   const exchanges = getSetExchanges(set);
@@ -98,13 +107,28 @@ export function ExportModal({
     }
   };
 
-  const items = [
+  const items: Array<{
+    key: ExportKey;
+    step: number;
+    title: string;
+    subtitle: string;
+    nativeFormat: string;
+    orientation: "portrait" | "landscape";
+    pdfFilename: string;
+    pdfRef: RefObject<HTMLDivElement | null>;
+    icon: ReactNode;
+    enabled: boolean;
+    action: () => Promise<boolean>;
+  }> = [
     {
       key: "order",
       step: 1,
       title: "คำสั่งแต่งตั้งเจ้าหน้าที่",
       subtitle: "เอกสารไฟล์ที่ 1",
-      format: "Word (.docx)",
+      nativeFormat: "Word (.docx)",
+      orientation: "portrait",
+      pdfFilename: "1 คำสั่งแต่งตั้งเจ้าหน้าที่ปฏิบัติงานนอกเวลา.pdf",
+      pdfRef: orderRef,
       icon: <FileText size={20} />,
       enabled: true,
       action: () => exportOrderDocx(set, settings),
@@ -114,7 +138,10 @@ export function ExportModal({
       step: 2,
       title: "บันทึกขออนุมัติขึ้นปฏิบัติงานนอกเวลา",
       subtitle: "เอกสารไฟล์ที่ 2",
-      format: "Word (.docx)",
+      nativeFormat: "Word (.docx)",
+      orientation: "portrait",
+      pdfFilename: "2 บันทึกขออนุมัติขึ้นปฏิบัติงานนอกเวลาราชการ.pdf",
+      pdfRef: memoRef,
       icon: <FileText size={20} />,
       enabled: true,
       action: () => exportMemoDocx(set, settings),
@@ -124,7 +151,10 @@ export function ExportModal({
       step: 3,
       title: "ตารางการปฏิบัติงานนอกเวลา",
       subtitle: "เอกสารไฟล์ที่ 3",
-      format: "Excel (.xlsx)",
+      nativeFormat: "Excel (.xlsx)",
+      orientation: "landscape",
+      pdfFilename: "3 ตารางการปฏิบัติงานนอกเวลาราชการ.pdf",
+      pdfRef: scheduleRef,
       icon: <FileSpreadsheet size={20} />,
       enabled: hasSchedule,
       action: () => exportScheduleXlsx(set, settings),
@@ -134,7 +164,10 @@ export function ExportModal({
       step: 4,
       title: "บัญชีลงเวลาปฏิบัติงาน",
       subtitle: "เอกสารไฟล์ที่ 4",
-      format: "Excel (.xlsx)",
+      nativeFormat: "Excel (.xlsx)",
+      orientation: "portrait",
+      pdfFilename: "4 บัญชีลงเวลาปฏิบัติงานนอกเวลาราชการ.pdf",
+      pdfRef: attendanceRef,
       icon: <FileSpreadsheet size={20} />,
       enabled: hasSchedule,
       action: () => exportAttendanceXlsx(set, settings),
@@ -144,12 +177,18 @@ export function ExportModal({
       step: 5,
       title: "หลักฐานการจ่ายเงินค่าตอบแทน",
       subtitle: "เอกสารไฟล์ที่ 5",
-      format: "Excel (.xlsx)",
+      nativeFormat: "Excel (.xlsx)",
+      orientation: "landscape",
+      pdfFilename: "5 หลักฐานการจ่ายเงินค่าตอบแทน.pdf",
+      pdfRef: paymentRef,
       icon: <FileSpreadsheet size={20} />,
       enabled: hasSchedule,
       action: () => exportPaymentXlsx(set, settings),
     },
   ];
+
+  const needsPdfStaging =
+    bulkFormat === "pdf" || Object.values(formats).includes("pdf");
 
   return (
     <Modal
@@ -182,13 +221,31 @@ export function ExportModal({
         {items.map((item) => {
           const done = set.completedSteps.includes(item.step as 1 | 2 | 3 | 4 | 5);
           const locked = item.step > 1 && !done && !hasSchedule;
+          const format = formats[item.key];
+          const formatLabel = format === "pdf" ? "PDF (.pdf)" : item.nativeFormat;
+          const handleDownload = () => {
+            if (format === "pdf") {
+              const container = item.pdfRef.current;
+              if (!container) {
+                notify("ยังเตรียมไฟล์ PDF ไม่พร้อม กรุณาลองใหม่", "error");
+                return;
+              }
+              void run(
+                item.key,
+                () => downloadPdf(container, item.orientation, item.pdfFilename),
+                `ส่งออก ${formatLabel} แล้ว`,
+              );
+              return;
+            }
+            void run(item.key, item.action, `ส่งออก ${formatLabel} แล้ว`);
+          };
           return (
             <div key={item.key} className="export-item">
               <span className="export-item__icon">{item.icon}</span>
               <div className="export-item__text">
                 <strong>{item.title}</strong>
                 <span>
-                  {item.subtitle} · {item.format}
+                  {item.subtitle} · {formatLabel}
                 </span>
               </div>
               <div className="export-item__meta">
@@ -202,13 +259,24 @@ export function ExportModal({
                   <Badge tone="gold">ฉบับร่าง</Badge>
                 )}
               </div>
+              <select
+                className="export-format-select"
+                aria-label={`รูปแบบไฟล์ ${item.title}`}
+                value={format}
+                disabled={!item.enabled || busy !== null}
+                onChange={(event) => {
+                  const value = event.target.value as ExportFormat;
+                  setFormats((previous) => ({ ...previous, [item.key]: value }));
+                }}
+              >
+                <option value="pdf">PDF (.pdf)</option>
+                <option value="native">{item.nativeFormat}</option>
+              </select>
               <Button
                 size="sm"
                 variant="soft"
                 disabled={!item.enabled || busy !== null}
-                onClick={() =>
-                  run(item.key, item.action, `ส่งออก ${item.format} แล้ว`)
-                }
+                onClick={handleDownload}
               >
                 <Download size={14} />
                 {busy === item.key ? "กำลังสร้าง…" : "ดาวน์โหลด"}
@@ -231,20 +299,20 @@ export function ExportModal({
           }}
           options={[
             {
-              value: "office",
-              label: "Word + Excel",
-              icon: <FileSpreadsheet size={14} />,
-            },
-            {
               value: "pdf",
               label: "PDF",
               icon: <FileText size={14} />,
+            },
+            {
+              value: "office",
+              label: "Word + Excel",
+              icon: <FileSpreadsheet size={14} />,
             },
           ]}
         />
       </div>
 
-      {bulkFormat === "pdf" && hasSchedule && (
+      {needsPdfStaging && (
         <div className="export-pdf-stage" aria-hidden="true">
           <div ref={orderRef}>
             <Form1Document set={set} settings={settings} />
@@ -303,8 +371,8 @@ export function ExportModal({
       <div className="export-note">
         <Printer size={16} />
         <span>
-          เลือก <strong>PDF</strong> ด้านบนเพื่อส่งออกทั้งชุด
-          หรือใช้ปุ่ม PDF บนแถบตัวอย่างเอกสารสำหรับส่งออกทีละไฟล์
+          เลือก <strong>PDF</strong> ในช่องรูปแบบไฟล์ของแต่ละแถวเพื่อดาวน์โหลดทีละไฟล์
+          หรือเลือก PDF ด้านบนเพื่อส่งออกทั้งชุด
           ระบบจะสร้าง PDF ตามขนาดกระดาษ A4 ของแต่ละฟอร์ม
         </span>
       </div>

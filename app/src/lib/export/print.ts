@@ -1,4 +1,5 @@
 import { saveBlob } from "./save";
+import { toArabicDigits } from "../thai";
 
 type Orientation = "portrait" | "landscape";
 
@@ -10,6 +11,23 @@ function clonePapers(container: HTMLElement): HTMLElement[] {
     clone.style.zoom = "1";
     return clone;
   });
+}
+
+function convertDigitsToArabic(root: HTMLElement): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    const value = node.nodeValue;
+    if (value && /[๐-๙]/.test(value)) {
+      node.nodeValue = toArabicDigits(value);
+    }
+  }
+}
+
+function preparePdfPapers(papers: HTMLElement[]): void {
+  for (const paper of papers) {
+    convertDigitsToArabic(paper);
+  }
 }
 
 function collectStyles(): string {
@@ -78,9 +96,9 @@ export async function buildPdf(
   container: HTMLElement,
   orientation: Orientation,
 ): Promise<Blob | null> {
-  await document.fonts.ready;
   const papers = clonePapers(container);
   if (papers.length === 0) return null;
+  preparePdfPapers(papers);
 
   const host = document.createElement("div");
   host.style.position = "fixed";
@@ -89,9 +107,20 @@ export async function buildPdf(
   host.style.background = "#fff";
   host.style.zIndex = "-1";
   for (const paper of papers) host.appendChild(paper);
+  const fontStyle = document.createElement("style");
+  fontStyle.textContent =
+    '.paper, .paper * { font-family: "TH Sarabun Embedded", "TH SarabunPSK", serif !important; }';
+  host.appendChild(fontStyle);
   document.body.appendChild(host);
 
   try {
+    await Promise.all(
+      ["400", "700"].map((weight) =>
+        document.fonts.load(`${weight} 14pt "TH Sarabun Embedded"`),
+      ),
+    ).catch(() => undefined);
+    await document.fonts.ready;
+
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
       import("html2canvas"),
       import("jspdf"),

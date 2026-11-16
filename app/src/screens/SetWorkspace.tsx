@@ -406,7 +406,6 @@ export function SetWorkspace({
           <PaperStage
             title={meta.title}
             orientation={meta.orientation}
-            filename={`${set.title}_${meta.filename}`}
           >
             {renderDocument()}
           </PaperStage>

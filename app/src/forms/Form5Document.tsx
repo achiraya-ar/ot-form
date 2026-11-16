@@ -79,17 +79,17 @@ export function Form5Document({
             <table className="doc-table doc-table--payment">
               <colgroup>
                 <col style={{ width: "7mm" }} />
-                <col style={{ width: "26mm" }} />
+                <col style={{ width: "36mm" }} />
                 <col style={{ width: "19mm" }} />
                 <col style={{ width: "11mm" }} />
                 {Array.from({ length: days }, (_, index) => (
                   <col key={index} style={{ width: "4mm" }} />
                 ))}
-                <col style={{ width: "20mm" }} />
-                <col style={{ width: "14mm" }} />
+                <col style={{ width: "18mm" }} />
                 <col style={{ width: "13mm" }} />
-                <col style={{ width: "16mm" }} />
-                <col style={{ width: "11mm" }} />
+                <col style={{ width: "12mm" }} />
+                <col style={{ width: "15mm" }} />
+                <col style={{ width: "10mm" }} />
               </colgroup>
               <thead>
                 <tr>

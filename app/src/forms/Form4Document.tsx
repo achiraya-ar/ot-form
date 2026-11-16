@@ -81,13 +81,13 @@ export function Form4Document({
 
             <table className="doc-table doc-table--attendance">
               <colgroup>
-                <col style={{ width: "24mm" }} />
-                <col style={{ width: "20mm" }} />
-                <col style={{ width: "48mm" }} />
-                <col style={{ width: "17mm" }} />
-                <col style={{ width: "24mm" }} />
-                <col style={{ width: "17mm" }} />
-                <col style={{ width: "24mm" }} />
+                <col style={{ width: "27mm" }} />
+                <col style={{ width: "23mm" }} />
+                <col style={{ width: "50mm" }} />
+                <col style={{ width: "16mm" }} />
+                <col style={{ width: "19mm" }} />
+                <col style={{ width: "16mm" }} />
+                <col style={{ width: "19mm" }} />
               </colgroup>
               <thead>
                 <tr>

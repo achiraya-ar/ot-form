@@ -36,9 +36,6 @@ export function ExchangeRequestModal({
       <PaperStage
         title="ใบขอแลกเปลี่ยนเวรปฏิบัติงาน"
         orientation="portrait"
-        filename={`ใบขอแลกเปลี่ยนเวร_${
-          original ? personFullName(original) : "employee"
-        }_${exchange.date}`}
       >
         <ExchangeRequestDocument set={set} settings={settings} exchange={exchange} />
       </PaperStage>
