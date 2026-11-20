@@ -54,8 +54,12 @@ export function ScheduleEditor({
     return next;
   });
   const [selectedStaffId, setSelectedStaffId] = useState(staff[0]?.id ?? "");
+  const [copyTargetId, setCopyTargetId] = useState("");
 
   const selectedPerson = staff.find((person) => person.id === selectedStaffId) ?? staff[0];
+  const copyTargets = staff.filter((person) => person.id !== selectedStaffId);
+  const copyTarget =
+    copyTargets.find((person) => person.id === copyTargetId) ?? null;
 
   const stats = useMemo(() => {
     const byStaff = new Map<
@@ -121,38 +125,27 @@ export function ScheduleEditor({
     });
   };
 
-  const addShiftForWeekdays = (weekdays: number[], shiftId?: string) => {
-    if (!selectedStaffId || !shiftId) return;
-    setPatterns((prev) => {
-      const current = { ...(prev[selectedStaffId] ?? {}) };
-      for (const date of dates) {
-        if (!weekdays.includes(parseIsoDate(date).getDay())) continue;
-        const list = current[date] ?? [];
-        if (!list.includes(shiftId)) current[date] = [...list, shiftId];
-      }
-      return { ...prev, [selectedStaffId]: current };
-    });
-    notify("เติมเวรตามวันที่เลือกแล้ว");
-  };
+  const copyToStaff = () => {
+    if (!selectedStaffId || !copyTarget) return;
+    const targetId = copyTarget.id;
+    const targetName = personFullName(copyTarget);
 
-  const copyToAll = () => {
-    if (!selectedStaffId) return;
-    const source = patterns[selectedStaffId] ?? {};
-    const next: DatePattern = {};
-    for (const person of staff) {
-      next[person.id] = {};
+    setPatterns((prev) => {
+      const source = prev[selectedStaffId] ?? {};
+      const nextTarget: Record<string, string[]> = {};
       for (const date of dates) {
-        next[person.id][date] = [...(source[date] ?? [])];
+        nextTarget[date] = [...(source[date] ?? [])];
       }
-    }
-    setPatterns(next);
-    notify("คัดลอกตารางของคนนี้ไปทุกคนแล้ว");
+      return { ...prev, [targetId]: nextTarget };
+    });
+
+    notify(`คัดลอกตารางไปยัง ${targetName} แล้ว`);
   };
 
   const clearSelected = () => {
     if (!selectedStaffId) return;
     setPatterns((prev) => ({ ...prev, [selectedStaffId]: {} }));
-    notify("ล้างตารางของพนักงานคนนี้แล้ว", "info");
+    notify("ล้างตารางของพนักงานคนนี้ทั้งหมดแล้ว", "info");
   };
 
   const buildAssignments = (): Assignment[] => {
@@ -296,27 +289,23 @@ export function ScheduleEditor({
                 <span>
                   <Sparkles size={14} /> เติมเร็ว
                 </span>
-                {morningShift && (
-                  <button
-                    type="button"
-                    onClick={() => addShiftForWeekdays([2], morningShift.id)}
-                  >
-                    อ. {morningShift.name}
-                  </button>
-                )}
-                {eveningShift && (
-                  <button
-                    type="button"
-                    onClick={() => addShiftForWeekdays([1, 2, 3, 4], eveningShift.id)}
-                  >
-                    จ.–พฤ. {eveningShift.name}
-                  </button>
-                )}
-                <button type="button" onClick={clearSelected}>
-                  <Eraser size={12} /> ล้างเดือนนี้
+                <select
+                  aria-label="เลือกพนักงานปลายทาง"
+                  value={copyTarget?.id ?? ""}
+                  onChange={(event) => setCopyTargetId(event.target.value)}
+                >
+                  <option value="">เลือกพนักงานปลายทาง</option>
+                  {copyTargets.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {personFullName(person)}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" onClick={copyToStaff} disabled={!copyTarget}>
+                  <Copy size={12} /> คัดลอกไปยัง
                 </button>
-                <button type="button" onClick={copyToAll}>
-                  <Copy size={12} /> คัดลอกไปทุกคน
+                <button type="button" onClick={clearSelected}>
+                  <Eraser size={12} /> ล้างทั้งหมด
                 </button>
               </div>
 

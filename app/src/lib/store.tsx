@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { saveBlob } from "./export/save";
 import type {
   AppSettings,
@@ -190,10 +190,27 @@ function allocateNumbers(settings: AppSettings, month: number, year: number) {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(loadState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  // Persist after a short pause instead of synchronously on every click.
+  // This keeps the calendar/editor responsive when many changes happen
+  // in quick succession. Pending changes are flushed when the app closes.
+  useEffect(() => {
+    const handle = window.setTimeout(() => persist(stateRef.current), 200);
+    return () => window.clearTimeout(handle);
+  }, [state]);
 
   useEffect(() => {
-    persist(state);
-  }, [state]);
+    const flush = () => persist(stateRef.current);
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("beforeunload", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("beforeunload", flush);
+      flush();
+    };
+  }, []);
 
   const login = () => {
     setState((prev) => ({

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -41,7 +41,14 @@ import { ScheduleEditor } from "../components/editors/ScheduleEditor";
 import { AttendanceEditor } from "../components/editors/AttendanceEditor";
 import { PaymentEditor } from "../components/editors/PaymentEditor";
 import { SetInfoEditor } from "../components/editors/SetInfoEditor";
-import { ExportModal } from "../components/ExportModal";
+
+// The export dialog pulls in docx, ExcelJS and PDF tooling. Load it only
+// when the user opens it so app startup stays fast.
+const ExportModal = lazy(() =>
+  import("../components/ExportModal").then((module) => ({
+    default: module.ExportModal,
+  })),
+);
 
 type EditorKind = "info" | "order" | "memo" | "schedule" | "attendance" | "payment" | "export" | null;
 
@@ -515,7 +522,9 @@ export function SetWorkspace({
         />
       )}
       {editor === "export" && (
-        <ExportModal set={set} settings={settings} onClose={() => setEditor(null)} />
+        <Suspense fallback={null}>
+          <ExportModal set={set} settings={settings} onClose={() => setEditor(null)} />
+        </Suspense>
       )}
     </div>
   );

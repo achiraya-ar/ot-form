@@ -2396,9 +2396,10 @@ dependencies = [
 
 [[package]]
 name = "ot-form"
-version = "1.69.1116"
+version = "1.69.1120"
 dependencies = [
  "base64 0.22.1",
+ "percent-encoding",
  "rfd",
  "serde",
  "serde_json",

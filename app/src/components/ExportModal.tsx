@@ -9,16 +9,6 @@ import {
 } from "lucide-react";
 import type { AppSettings, DocumentSet } from "../types";
 import { Badge, Button, Modal, Segmented, useToast } from "./ui";
-import { exportMemoDocx, exportOrderDocx } from "../lib/export/word";
-import {
-  exportAttendanceXlsx,
-  exportPaymentXlsx,
-  exportScheduleXlsx,
-} from "../lib/export/excel";
-import {
-  exportAllFolder,
-  exportAllPdf,
-} from "../lib/export/folder";
 import { downloadPdf } from "../lib/export/print";
 import { getSetExchanges } from "../lib/selectors";
 import { Form1Document } from "../forms/Form1Document";
@@ -44,13 +34,13 @@ export function ExportModal({
 }) {
   const notify = useToast();
   const [busy, setBusy] = useState<Busy>(null);
-  const [bulkFormat, setBulkFormat] = useState<BulkFormat>("pdf");
+  const [bulkFormat, setBulkFormat] = useState<BulkFormat>("office");
   const [formats, setFormats] = useState<Record<ExportKey, ExportFormat>>({
-    order: "pdf",
-    memo: "pdf",
-    schedule: "pdf",
-    attendance: "pdf",
-    payment: "pdf",
+    order: "native",
+    memo: "native",
+    schedule: "native",
+    attendance: "native",
+    payment: "native",
   });
   const [savedFolder, setSavedFolder] = useState<string | null>(null);
   const hasSchedule = set.assignments.length > 0;
@@ -79,6 +69,7 @@ export function ExportModal({
     setBusy("bulk");
     try {
       if (bulkFormat === "office") {
+        const { exportAllFolder } = await import("../lib/export/folder");
         const saved = await exportAllFolder(set, settings);
         if (saved) {
           setSavedFolder(saved);
@@ -87,6 +78,7 @@ export function ExportModal({
         return;
       }
 
+      const { exportAllPdf } = await import("../lib/export/folder");
       const saved = await exportAllPdf(set, {
         order: orderRef.current,
         memo: memoRef.current,
@@ -131,7 +123,7 @@ export function ExportModal({
       pdfRef: orderRef,
       icon: <FileText size={20} />,
       enabled: true,
-      action: () => exportOrderDocx(set, settings),
+      action: async () => (await import("../lib/export/word")).exportOrderDocx(set, settings),
     },
     {
       key: "memo",
@@ -144,7 +136,7 @@ export function ExportModal({
       pdfRef: memoRef,
       icon: <FileText size={20} />,
       enabled: true,
-      action: () => exportMemoDocx(set, settings),
+      action: async () => (await import("../lib/export/word")).exportMemoDocx(set, settings),
     },
     {
       key: "schedule",
@@ -157,7 +149,8 @@ export function ExportModal({
       pdfRef: scheduleRef,
       icon: <FileSpreadsheet size={20} />,
       enabled: hasSchedule,
-      action: () => exportScheduleXlsx(set, settings),
+      action: async () =>
+        (await import("../lib/export/excel")).exportScheduleXlsx(set, settings),
     },
     {
       key: "attendance",
@@ -170,7 +163,8 @@ export function ExportModal({
       pdfRef: attendanceRef,
       icon: <FileSpreadsheet size={20} />,
       enabled: hasSchedule,
-      action: () => exportAttendanceXlsx(set, settings),
+      action: async () =>
+        (await import("../lib/export/excel")).exportAttendanceXlsx(set, settings),
     },
     {
       key: "payment",
@@ -183,7 +177,8 @@ export function ExportModal({
       pdfRef: paymentRef,
       icon: <FileSpreadsheet size={20} />,
       enabled: hasSchedule,
-      action: () => exportPaymentXlsx(set, settings),
+      action: async () =>
+        (await import("../lib/export/excel")).exportPaymentXlsx(set, settings),
     },
   ];
 
@@ -269,8 +264,8 @@ export function ExportModal({
                   setFormats((previous) => ({ ...previous, [item.key]: value }));
                 }}
               >
-                <option value="pdf">PDF (.pdf)</option>
                 <option value="native">{item.nativeFormat}</option>
+                <option value="pdf">PDF (.pdf)</option>
               </select>
               <Button
                 size="sm"
@@ -299,14 +294,14 @@ export function ExportModal({
           }}
           options={[
             {
-              value: "pdf",
-              label: "PDF",
-              icon: <FileText size={14} />,
-            },
-            {
               value: "office",
               label: "Word + Excel",
               icon: <FileSpreadsheet size={14} />,
+            },
+            {
+              value: "pdf",
+              label: "PDF",
+              icon: <FileText size={14} />,
             },
           ]}
         />

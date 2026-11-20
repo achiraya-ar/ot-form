@@ -6714,6 +6714,28 @@ img {
   color: var(--sky-700);
 }
 
+.calendar-presets button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.calendar-presets select {
+  min-width: 150px;
+  padding: 4px 7px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--slate);
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.calendar-presets select:focus {
+  outline: 2px solid var(--sky-300);
+  outline-offset: 1px;
+}
+
 .calendar-weekdays,
 .calendar-grid {
   display: grid;
@@ -6964,6 +6986,10 @@ img {
 
 .calendar-presets button:hover {
   background: #f0f9ff;
+}
+
+.calendar-presets select {
+  background: #fbfdff;
 }
 
 .cal-cell.is-weekend {
